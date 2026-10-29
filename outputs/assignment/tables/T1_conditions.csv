@@ -1,0 +1,10 @@
+item,value
+grid,"0.5 nm per cell (λ/7), computation area = cell + 100 nm on every side"
+area INV_X1,550 x 800 cells = 275 x 400 nm
+area NAND2_X4,750 x 800 cells = 375 x 400 nm
+light distribution,"2D Gaussian, σ = 0.21·λ/NA = 5.155 nm (λ = 13.5 nm, NA = 0.55)"
+range / normalization,"cut off at r = 4σ = 20.62 nm, weights normalized to sum 1 (open area -> exposure 1)"
+exposure,"E(x) = Σ mask(x')·G(x − x'), G = normalized Gaussian (light amounts added, no phase)"
+resist / threshold,"positive resist, E ≥ 0.5 dissolves (trench → Metal1)"
+dose,1.0 for before/after comparison; 0.85–1.15 only in the condition study
+OPC,"model-based, fragments 3.5 / 7 nm, damping 0.5, 30 iterations, moves −3.5…+7 nm, MRC 3.5 nm"

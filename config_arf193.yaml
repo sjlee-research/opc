@@ -1,0 +1,95 @@
+# ArF immersion (193 nm) setup used by the earlier report experiments (`run.py stage`, `run.py examples`).
+# Only keys that differ from the code defaults are required; all are listed here for reference.
+optics:
+  model: hopkins            # hopkins (TCC -> SOCS) | gaussian (single coherent Gaussian kernel)
+  wavelength_nm: 193.0
+  NA: 1.35
+  immersion_index: 1.44     # water; use 1.0 for dry (NA < 1)
+  illumination: annular     # conventional | annular | dipole_x | dipole_y | quasar
+  sigma: 0.7                # used by conventional
+  sigma_in: 0.6
+  sigma_out: 0.9
+  pole_angle_deg: 30.0
+  source_grid: 41
+  num_kernels: 24
+  gaussian_sigma_nm: null   # null -> 0.2 * wavelength / NA
+  pixel_compensation: true
+
+resist:
+  threshold: null           # null -> dose-to-size on the anchor below
+  diffusion_nm: 0.0
+  anchor_cd_nm: 60.0
+  anchor_pitch_nm: 180.0    # 60 nm line at 1:2 pitch prints on target
+
+grid:
+  pixel_nm: 2.0
+  margin_nm: 600.0
+  max_pixels: 4096
+
+process:
+  doses: [0.97, 1.0, 1.03]
+  defocus_nm: [-40.0, 0.0, 40.0]
+
+patterns:
+  cd_nm: 60.0
+  line_length_nm: 1000.0
+  dense_pitches_nm: [120.0, 180.0, 240.0]
+  num_lines: 7
+  line_end_gap_nm: 80.0
+  line_end_pitch_nm: 180.0
+  arm_length_nm: 500.0
+  contact_nm: 90.0
+  contact_pitch_nm: 180.0
+  through_pitch_nm: [120, 130, 140, 150, 165, 180, 200, 220, 240, 270, 300, 350, 400, 500, 600, 800]
+  iso_pitch_nm: 2400.0
+
+fragment:
+  corner_len_nm: 20.0       # corner segment length
+  segment_len_nm: 50.0      # interior segment length
+  min_segment_nm: 10.0
+  line_end_max_nm: 100.0    # edge between two convex corners shorter than this = line end
+  corner_site: 1.0          # control site on corner segments: 0 = at the vertex, 1 = corner_len away
+  max_range_nm: 1000.0
+
+mrc:                        # wafer scale (x4 on the reticle)
+  min_width_nm: 20.0
+  min_space_nm: 20.0
+
+rule:
+  bias_spaces_nm: [60, 70, 80, 90, 105, 120, 140, 160, 180, 210, 240, 300, 400, 600, 1000]
+  serif_nm: 10.0
+  inner_serif_nm: 6.0
+  hammer_nm: 6.0
+  line_end_ext_nm: null     # null -> calibrated on an isolated line end
+  max_bias_nm: 25.0
+
+mbopc:
+  iterations: 30
+  damping: 0.5
+  adaptive: false           # contribution A
+  adapt_up: 1.25
+  adapt_down: 0.5
+  damping_min: 0.1
+  damping_max: 1.2
+  init: none                # none | rule   (contribution B)
+  pw_aware: false           # contribution C
+  pw_nominal_weight: 0.5
+  pw_dose: 0.03
+  pw_defocus_nm: 40.0
+  max_out_nm: 40.0
+  max_in_nm: 25.0
+  mrc_guard: true
+  tol_rms_nm: 0.5
+  tol_max_nm: 2.0
+
+ilt:
+  iterations: 150
+  lr: 0.08
+  mask_steepness: 4.0
+  resist_steepness: 60.0
+  binarization_weight: 0.02
+  tv_weight: 0.002
+  corner_weight: 0.1
+
+device: cpu
+dtype: float32

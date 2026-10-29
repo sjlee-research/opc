@@ -1,0 +1,863 @@
+<title>Metal1 OPC Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: a narrow control rail, a 2 x 3 bench (original / OPC mask x mask / exposure / developed), metrics below. */
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #151a21; --ink-2: #4b5462; --muted: #8790a0; --line: #dde2e8;
+  --accent: #2a6fd0; --accent-ink: #ffffff; --mask: #5a47c6; --before: #e2622c; --after: #2a6fd0;
+  --miss: #d23b3b; --target: #262c35; --good: #1c7a46; --chip: #eef1f5;
+  --heat0: #ffffff; --heat1: #b9d3f5; --heat2: #2f6fc4; --heat3: #0b2e63;
+  --font-ui: "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1216; --panel: #171b21; --ink: #e8ecf1; --ink-2: #b3bcc8; --muted: #7d8794; --line: #2a3038;
+  --accent: #5b9bef; --accent-ink: #0b1220; --mask: #a597ff; --before: #f08a58; --after: #6aa8f5;
+  --miss: #ff6b6b; --target: #dfe5ec; --good: #4cc483; --chip: #20262e;
+  --heat0: #171b21; --heat1: #1d3b66; --heat2: #3f7fd6; --heat3: #d6e6ff; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1216; --panel: #171b21; --ink: #e8ecf1; --ink-2: #b3bcc8; --muted: #7d8794; --line: #2a3038;
+  --accent: #5b9bef; --accent-ink: #0b1220; --mask: #a597ff; --before: #f08a58; --after: #6aa8f5;
+  --miss: #ff6b6b; --target: #dfe5ec; --good: #4cc483; --chip: #20262e;
+  --heat0: #171b21; --heat1: #1d3b66; --heat2: #3f7fd6; --heat3: #d6e6ff; color-scheme: dark; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 32px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--ink-2); margin: 2px 0 0; font-size: 13px; }
+header { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.formula { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+.app { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.rail { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group + .group { border-top: 1px solid var(--line); padding-top: 12px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--chip); border-radius: 8px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 12.5px; padding: 6px 4px;
+  border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; }
+.row output { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+input[type=range] { width: 100%; accent-color: var(--accent); grid-column: 1 / -1; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 10px;
+  border-radius: 8px; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { font-size: 12px; color: var(--ink-2); }
+.progress { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); min-height: 1.5em; font-variant-numeric: tabular-nums; }
+.edit-box { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
+.edit-box output { text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.bench-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.bench { display: grid; grid-template-columns: auto repeat(3, minmax(150px, 1fr)); gap: 10px 12px; min-width: 560px; align-items: start; }
+.rowhead { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; color: var(--ink-2);
+  text-align: center; align-self: center; letter-spacing: 0.02em; }
+.panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ptitle { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; }
+.ptitle b { font-weight: 600; margin-right: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-size: 11.5px; }
+.sw { width: 14px; height: 9px; border-radius: 2px; display: inline-block; }
+.sw.line { height: 0; border-top: 2px solid currentColor; border-radius: 0; }
+.sw.dash { height: 0; border-top: 1.5px dashed var(--target); border-radius: 0; }
+canvas.view { width: 100%; display: block; border-radius: 6px; background: var(--panel); outline: 1px solid var(--line); touch-action: none; }
+canvas.edit { cursor: crosshair; }
+.metrics { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+td.better { color: var(--good); font-weight: 600; }
+td.worse { color: var(--miss); font-weight: 600; }
+.foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 700px) { .foot { grid-template-columns: minmax(0, 1fr); } }
+.spark { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.spark canvas { width: 100%; height: 120px; display: block; }
+.defs { font-size: 12px; color: var(--ink-2); display: grid; gap: 4px; }
+.defs code { font-family: var(--font-mono); font-size: 11.5px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 30; }
+.dialog { position: fixed; inset: 0; background: rgba(10, 14, 20, 0.45); display: grid; place-items: center; z-index: 40; padding: 16px; }
+.dialog .card { background: var(--panel); color: var(--ink); border-radius: 10px; padding: 14px; width: min(640px, 100%); display: grid; gap: 10px; }
+.dialog textarea { width: 100%; height: 260px; font-family: var(--font-mono); font-size: 11.5px; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div>
+    <h1>Metal1 OPC Bench</h1>
+    <p class="sub">INV_X1 · NAND2_X4 Metal1 (λ = 3.5 nm, line 10.5 nm) — 광량 합산 모델과 model-based OPC</p>
+  </div>
+  <div class="formula">E(x) = Σ mask(x′)·PSF(x − x′) · printed where dose·E ≥ threshold</div>
+</header>
+
+<div class="app">
+  <aside class="rail" aria-label="Controls">
+    <div class="group">
+      <span class="label">Cell</span>
+      <div class="seg" id="cellSeg">
+        <button type="button" data-v="INV_X1" aria-pressed="true">INV_X1</button>
+        <button type="button" data-v="NAND2_X4" aria-pressed="false">NAND2_X4</button>
+        <button type="button" data-v="Custom" aria-pressed="false">Custom</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label">Light distribution</span>
+      <div class="seg" id="psfSeg">
+        <button type="button" data-v="gaussian" aria-pressed="true">Gaussian</button>
+        <button type="button" data-v="table" aria-pressed="false">Table (Fig. 4)</button>
+      </div>
+      <div class="row" id="sigmaRow"><label for="sigma">σ (cut-off 4σ)</label><output id="sigmaOut"></output>
+        <input id="sigma" type="range" min="3" max="8" step="0.05" value="5.155"></div>
+      <div class="row"><label for="thr">Threshold</label><output id="thrOut"></output>
+        <input id="thr" type="range" min="0.3" max="0.7" step="0.01" value="0.5"></div>
+      <div class="row"><label for="dose">Dose</label><output id="doseOut"></output>
+        <input id="dose" type="range" min="0.85" max="1.15" step="0.01" value="1"></div>
+      <p class="note">Before/after comparison: keep dose 1.00. Positive resist — dose·E ≥ threshold is developed away (trench → Metal1).</p>
+    </div>
+    <div class="group">
+      <span class="label">Model-based OPC</span>
+      <div class="row"><label for="iters">Iterations</label><output id="itersOut"></output>
+        <input id="iters" type="range" min="1" max="60" step="1" value="30"></div>
+      <div class="row"><label for="damp">Damping</label><output id="dampOut"></output>
+        <input id="damp" type="range" min="0.1" max="1" step="0.05" value="0.5"></div>
+      <div class="btns"><button type="button" class="btn primary" id="runOpc">Run OPC</button>
+        <button type="button" class="btn" id="resetMask">Reset mask</button></div>
+      <div class="progress" id="progress" aria-live="polite"></div>
+    </div>
+    <div class="group">
+      <span class="label">Edit OPC mask</span>
+      <div class="seg" id="toolSeg">
+        <button type="button" data-v="select" aria-pressed="true">Edge</button>
+        <button type="button" data-v="add" aria-pressed="false">Add</button>
+        <button type="button" data-v="erase" aria-pressed="false">Erase</button>
+        <button type="button" data-v="cells" aria-pressed="false" id="cellsTool">Target</button>
+      </div>
+      <div class="edit-box"><button type="button" class="btn" id="segMinus" aria-label="Move edge inward">−0.5</button>
+        <output id="segOut">no edge</output><button type="button" class="btn" id="segPlus" aria-label="Move edge outward">+0.5</button></div>
+      <p class="note" id="toolNote">Click an edge in the OPC mask, then move it with the buttons or arrow keys.</p>
+    </div>
+    <div class="group">
+      <span class="label">Export</span>
+      <div class="btns"><button type="button" class="btn" id="exJson">JSON</button><button type="button" class="btn" id="exCsv">CSV</button>
+        <button type="button" class="btn" id="exPng">PNG</button><button type="button" class="btn" id="exCopy">Copy</button></div>
+      <label class="btn" for="imJson" style="text-align:center">Load JSON…</label>
+      <input id="imJson" type="file" accept=".json,application/json" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <div class="bench-wrap">
+      <div class="bench" id="bench">
+        <div class="rowhead">Original mask</div>
+        <div class="panel"><div class="ptitle"><b>Mask</b><span class="chip"><span class="sw" style="background:var(--mask);opacity:.35"></span>mask</span><span class="chip"><span class="sw dash"></span>target</span></div><canvas class="view" id="c00"></canvas></div>
+        <div class="panel"><div class="ptitle"><b>Exposure</b><span class="chip" style="color:var(--before)"><span class="sw line"></span><span style="color:var(--ink-2)">threshold</span></span></div><canvas class="view" id="c01"></canvas></div>
+        <div class="panel"><div class="ptitle"><b>Developed</b><span class="chip"><span class="sw" style="background:var(--before);opacity:.45"></span>printed</span><span class="chip"><span class="sw" style="background:var(--miss)"></span>mismatch</span></div><canvas class="view" id="c02"></canvas></div>
+        <div class="rowhead">OPC mask</div>
+        <div class="panel"><div class="ptitle"><b>Mask</b><span class="chip"><span class="sw" style="background:var(--mask);opacity:.35"></span>mask</span><span class="chip"><span class="sw dash"></span>target</span></div><canvas class="view edit" id="c10"></canvas></div>
+        <div class="panel"><div class="ptitle"><b>Exposure</b><span class="chip" style="color:var(--after)"><span class="sw line"></span><span style="color:var(--ink-2)">threshold</span></span></div><canvas class="view" id="c11"></canvas></div>
+        <div class="panel"><div class="ptitle"><b>Developed</b><span class="chip"><span class="sw" style="background:var(--after);opacity:.45"></span>printed</span><span class="chip"><span class="sw" style="background:var(--miss)"></span>mismatch</span></div><canvas class="view" id="c12"></canvas></div>
+      </div>
+    </div>
+    <div class="metrics"><table id="mtable"><thead><tr><th>Metric</th><th>Original mask</th><th>OPC mask</th><th>Change</th></tr></thead><tbody></tbody></table></div>
+    <div class="foot">
+      <div class="spark"><span class="label">OPC convergence — mismatch area per iteration</span><canvas id="spark"></canvas></div>
+      <div class="spark defs">
+        <span class="label">Definitions</span>
+        <span><code>mismatch</code> area where the developed pattern ≠ target, % of target area (sub-pixel)</span>
+        <span><code>IoU</code> |printed ∩ target| / |printed ∪ target|</span>
+        <span><code>EPE</code> printed-edge distance from the target edge, every 1 nm, outside 3.5 nm corner zones</span>
+        <span><code>CD</code> printed width at fixed cut lines (target 10.5 nm) · <code>line end</code> tip pull-back</span>
+        <span>Grid 0.5 nm (λ/7) · area = cell + 25 nm margin · Gaussian σ = 0.21·λ/NA (13.5 nm, NA 0.55)</span>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="dialog" id="dlg" hidden><div class="card"><b id="dlgTitle">Results JSON</b>
+  <textarea id="dlgText" readonly></textarea>
+  <div class="btns"><button type="button" class="btn primary" id="dlgCopy">Copy</button><button type="button" class="btn" id="dlgClose">Close</button></div></div></div>
+
+<script>
+"use strict";
+// ======================================================================== constants
+const LAM = 3.5, PIX = 0.5, MARGIN = 25;
+const FIG4 = [[0, .5, 1, .5, 0], [.5, 4, 5, 4, .5], [1, 5, 10, 5, 1], [.5, 4, 5, 4, .5], [0, .5, 1, .5, 0]];
+const CELLS = {   // Metal1 rectangles (x0, y0, x1, y1) in nm, origin top-left, y down (as in the reference figure)
+  INV_X1: { w: 63, h: 189, rects: [[0, 0, 63, 10.5], [10.5, 10.5, 21, 73.5], [42, 63, 52.5, 126], [10.5, 115.5, 21, 178.5], [0, 178.5, 63, 189]],
+    gauges: [["top bar", 42, 5.25, "v"], ["upper stem", 15.75, 42, "h"], ["right bar", 47.25, 94.5, "h"], ["lower stem", 15.75, 147, "h"], ["bottom bar", 42, 183.75, "v"]] },
+  NAND2_X4: { w: 157.5, h: 189, rects: [[0, 0, 157.5, 10.5], [10.5, 10.5, 21, 42], [73.5, 10.5, 84, 42], [136.5, 10.5, 147, 42], [42, 21, 52.5, 84],
+    [105, 21, 115.5, 84], [42, 73.5, 115.5, 84], [73.5, 84, 84, 168], [10.5, 105, 21, 178.5], [42, 105, 52.5, 168], [105, 105, 115.5, 168],
+    [136.5, 105, 147, 178.5], [0, 178.5, 157.5, 189]],
+    gauges: [["top bar", 31.5, 5.25, "v"], ["stub left", 15.75, 26.25, "h"], ["stub mid", 78.75, 26.25, "h"], ["stub right", 141.75, 26.25, "h"],
+      ["U left", 47.25, 47.25, "h"], ["U right", 110.25, 47.25, "h"], ["U bar", 63, 78.75, "v"], ["center stem", 78.75, 126, "h"],
+      ["lower 1", 15.75, 136.5, "h"], ["lower 2", 47.25, 136.5, "h"], ["lower 3", 110.25, 136.5, "h"], ["lower 4", 141.75, 136.5, "h"],
+      ["bottom bar", 31.5, 183.75, "v"]] },
+  Custom: { w: 70, h: 105, rects: [[0, 0, 70, 10.5], [0, 10.5, 10.5, 105], [31.5, 31.5, 42, 84], [59.5, 52.5, 70, 105]], gauges: [] },
+};
+const FRAG = { corner: 3.5, seg: 7, minSeg: 1.75, lineEndMax: 14, maxIn: 3.5, maxOut: 7, minW: 3.5, minS: 3.5 };
+const NORMAL = 0, CONVEX = 1, CONCAVE = 2, LINE_END = 3;
+
+// ============================================================================ state
+const S = { cell: "INV_X1", psf: "gaussian", sigma: 5.155, thr: 0.5, dose: 1, iters: 30, damp: 0.5,
+  bits: null, nx: 0, ny: 0, geo: null, grid: null, offsets: null, extras: [], history: [], sel: -1, tool: "select",
+  orig: null, opc: null, busy: false };
+
+// ========================================================================= geometry
+function cellsFromRects(c) {
+  const nx = Math.round(c.w / LAM), ny = Math.round(c.h / LAM), bits = new Uint8Array(nx * ny);
+  for (const [x0, y0, x1, y1] of c.rects)
+    for (let i = Math.round(y0 / LAM); i < Math.round(y1 / LAM); i++)
+      for (let j = Math.round(x0 / LAM); j < Math.round(x1 / LAM); j++) bits[i * nx + j] = 1;
+  return { nx, ny, bits };
+}
+
+function loopsFromCells(nx, ny, bits) {
+  // boundary unit edges, interior on the right (clockwise on screen, y down); joined into closed loops
+  const on = (i, j) => i >= 0 && j >= 0 && i < ny && j < nx && bits[i * nx + j] === 1;
+  const out = new Map(); let count = 0;
+  const add = (x0, y0, x1, y1) => { const k = x0 + "," + y0; if (!out.has(k)) out.set(k, []); out.get(k).push([x0, y0, x1, y1]); count++; };
+  for (let i = 0; i < ny; i++) for (let j = 0; j < nx; j++) if (on(i, j)) {
+    if (!on(i - 1, j)) add(j, i, j + 1, i);
+    if (!on(i, j + 1)) add(j + 1, i, j + 1, i + 1);
+    if (!on(i + 1, j)) add(j + 1, i + 1, j, i + 1);
+    if (!on(i, j - 1)) add(j, i + 1, j, i);
+  }
+  const loops = [];
+  while (count > 0) {
+    let first = null;
+    for (const [k, l] of out) if (l.length) { first = l.pop(); count--; break; }
+    const loop = [first]; let cur = first;
+    for (;;) {
+      const k = cur[2] + "," + cur[3];
+      if (cur[2] === first[0] && cur[3] === first[1]) break;
+      const l = out.get(k); if (!l || !l.length) break;
+      let pick = 0;
+      if (l.length > 1) {                         // touching corners: take the right turn
+        const dx = cur[2] - cur[0], dy = cur[3] - cur[1];
+        pick = l.findIndex(e => dx * (e[3] - e[1]) - dy * (e[2] - e[0]) > 0); if (pick < 0) pick = 0;
+      }
+      cur = l.splice(pick, 1)[0]; count--; loop.push(cur);
+    }
+    const pts = [];                                // keep the vertices where the direction changes
+    for (let n = 0; n < loop.length; n++) {
+      const a = loop[(n + loop.length - 1) % loop.length], b = loop[n];
+      const d1 = [a[2] - a[0], a[3] - a[1]], d2 = [b[2] - b[0], b[3] - b[1]];
+      if (d1[0] !== d2[0] || d1[1] !== d2[1]) pts.push([b[0] * LAM, b[1] * LAM]);
+    }
+    if (pts.length >= 4) loops.push(pts);
+  }
+  return loops;
+}
+
+function edgeTable(polys) {
+  const v = [], h = [];
+  for (const p of polys) for (let k = 0; k < p.length; k++) {
+    const a = p[k], b = p[(k + 1) % p.length];
+    if (Math.abs(a[0] - b[0]) < 1e-9) v.push([a[0], Math.min(a[1], b[1]), Math.max(a[1], b[1])]);
+    else h.push([a[1], Math.min(a[0], b[0]), Math.max(a[0], b[0])]);
+  }
+  return { v, h };
+}
+
+function raycast(px, py, dx, dy, et, maxR) {
+  let best = maxR;
+  if (Math.abs(dx) > 0.5) { for (const [x, y0, y1] of et.v) if (py >= y0 - 1e-9 && py <= y1 + 1e-9) { const d = (x - px) * Math.sign(dx); if (d > 1e-6 && d < best) best = d; } }
+  else { for (const [y, x0, x1] of et.h) if (px >= x0 - 1e-9 && px <= x1 + 1e-9) { const d = (y - py) * Math.sign(dy); if (d > 1e-6 && d < best) best = d; } }
+  return best;
+}
+
+function cuts(L) {
+  const c = FRAG.corner, m = FRAG.minSeg;
+  if (L < 2 * m) return [0, L];
+  if (L < 2 * c + m) return [0, L / 2, L];
+  const inner = L - 2 * c, n = Math.max(1, Math.round(inner / FRAG.seg)), out = [0];
+  for (let k = 0; k <= n; k++) out.push(c + inner * k / n);
+  out.push(L); return out;
+}
+
+function buildGeometry(polys) {
+  const et = edgeTable(polys), segs = [];
+  polys.forEach((poly, pi) => {
+    const n = poly.length;
+    const convex = poly.map((v, k) => {
+      const a = poly[(k + n - 1) % n], b = poly[(k + 1) % n];
+      return (v[0] - a[0]) * (b[1] - v[1]) - (v[1] - a[1]) * (b[0] - v[0]) > 0;
+    });
+    for (let k = 0; k < n; k++) {
+      const a = poly[k], b = poly[(k + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const t = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], nrm = [t[1], -t[0]];
+      const c0 = convex[k], c1 = convex[(k + 1) % n];
+      let cs, kinds;
+      if (c0 && c1 && L <= FRAG.lineEndMax + 1e-9) { cs = [0, L]; kinds = [LINE_END]; }
+      else { cs = cuts(L); kinds = cs.slice(1).map(() => NORMAL); kinds[0] = c0 ? CONVEX : CONCAVE;
+        if (kinds.length > 1) kinds[kinds.length - 1] = c1 ? CONVEX : CONCAVE; }
+      for (let s = 0; s + 1 < cs.length; s++) {
+        const sa = [a[0] + cs[s] * t[0], a[1] + cs[s] * t[1]], sb = [a[0] + cs[s + 1] * t[0], a[1] + cs[s + 1] * t[1]];
+        let site;
+        if ((kinds[s] === CONVEX || kinds[s] === CONCAVE) && cs.length > 2) site = s === 0 ? sb : sa;   // corner_len from the vertex
+        else site = [(sa[0] + sb[0]) / 2, (sa[1] + sb[1]) / 2];
+        segs.push({ a: sa, b: sb, n: nrm, kind: kinds[s], poly: pi, site, collinear: s < cs.length - 2 });
+      }
+    }
+  });
+  for (const g of segs) {                           // move limits from local width / space
+    let sp = 1e9, wd = 1e9;
+    for (const f of [0.25, 0.5, 0.75]) {
+      const px = g.a[0] + f * (g.b[0] - g.a[0]), py = g.a[1] + f * (g.b[1] - g.a[1]);
+      sp = Math.min(sp, raycast(px, py, g.n[0], g.n[1], et, 100));
+      wd = Math.min(wd, raycast(px, py, -g.n[0], -g.n[1], et, 100));
+    }
+    g.hi = Math.max(0, Math.min(FRAG.maxOut, (sp - FRAG.minS) / 2));
+    g.lo = -Math.max(0, Math.min(FRAG.maxIn, (wd - FRAG.minW) / 2));
+  }
+  return { polys, segs, et };
+}
+
+function maskPolygons(geo, d) {
+  const out = [];
+  geo.polys.forEach((_, pi) => {
+    const idx = []; geo.segs.forEach((g, k) => { if (g.poly === pi) idx.push(k); });
+    const verts = [];
+    idx.forEach((i, k) => {
+      const j = idx[(k + 1) % idx.length], gi = geo.segs[i], gj = geo.segs[j];
+      const p = [gi.b[0] + d[i] * gi.n[0], gi.b[1] + d[i] * gi.n[1]];
+      if (gi.collinear) { verts.push(p, [gi.b[0] + d[j] * gj.n[0], gi.b[1] + d[j] * gj.n[1]]); }
+      else verts.push([p[0] + d[j] * gj.n[0], p[1] + d[j] * gj.n[1]]);
+    });
+    out.push(verts);
+  });
+  return out;
+}
+
+// ========================================================================= raster & imaging
+function makeGrid(c, extras) {
+  let x0 = -MARGIN, y0 = -MARGIN, x1 = c.w + MARGIN, y1 = c.h + MARGIN;
+  for (const r of extras) { x0 = Math.min(x0, r.x0 - MARGIN); y0 = Math.min(y0, r.y0 - MARGIN); x1 = Math.max(x1, r.x1 + MARGIN); y1 = Math.max(y1, r.y1 + MARGIN); }
+  const W = Math.ceil((x1 - x0) / PIX), H = Math.ceil((y1 - y0) / PIX);
+  return { x0, y0, W, H, p: PIX };
+}
+
+function rasterPolygons(polys, G) {
+  // exact area coverage of Manhattan polygons: each vertical edge adds a signed step to the right of it
+  const { W, H, x0, y0, p } = G, total = new Float32Array(W * H), V = new Float32Array(W * H), D = new Float32Array(H * (W + 1));
+  for (const poly of polys) {
+    V.fill(0); D.fill(0);
+    for (let k = 0; k < poly.length; k++) {
+      const a = poly[k], b = poly[(k + 1) % poly.length];
+      if (Math.abs(a[0] - b[0]) > 1e-9 || Math.abs(a[1] - b[1]) < 1e-9) continue;
+      const s = b[1] > a[1] ? 1 : -1, lo = Math.min(a[1], b[1]), hi = Math.max(a[1], b[1]);
+      const u = (a[0] - x0) / p, jx = Math.floor(u), f = u - jx;
+      const i0 = Math.max(0, Math.floor((lo - y0) / p)), i1 = Math.min(H - 1, Math.ceil((hi - y0) / p) - 1);
+      for (let i = i0; i <= i1; i++) {
+        const Y = y0 + i * p, cy = (Math.min(hi, Y + p) - Math.max(lo, Y)) / p;
+        if (cy <= 0) continue;
+        if (jx < 0) D[i * (W + 1)] += s * cy;
+        else if (jx < W) { V[i * W + jx] += s * cy * (1 - f); D[i * (W + 1) + jx + 1] += s * cy; }
+      }
+    }
+    for (let i = 0; i < H; i++) { let acc = 0;
+      for (let j = 0; j < W; j++) { acc += D[i * (W + 1) + j]; total[i * W + j] += Math.abs(V[i * W + j] + acc); } }
+  }
+  for (let k = 0; k < total.length; k++) total[k] = Math.min(1, total[k]);
+  return total;
+}
+
+function applyExtras(cov, extras, G) {
+  const { W, H, x0, y0, p } = G;
+  for (const r of extras) {
+    const j0 = Math.max(0, Math.floor((r.x0 - x0) / p)), j1 = Math.min(W - 1, Math.ceil((r.x1 - x0) / p) - 1);
+    const i0 = Math.max(0, Math.floor((r.y0 - y0) / p)), i1 = Math.min(H - 1, Math.ceil((r.y1 - y0) / p) - 1);
+    for (let i = i0; i <= i1; i++) { const Y = y0 + i * p, cy = Math.max(0, (Math.min(r.y1, Y + p) - Math.max(r.y0, Y)) / p);
+      for (let j = j0; j <= j1; j++) { const X = x0 + j * p, cx = Math.max(0, (Math.min(r.x1, X + p) - Math.max(r.x0, X)) / p), c = cx * cy, k = i * W + j;
+        cov[k] = r.type === "add" ? cov[k] + c - cov[k] * c : cov[k] * (1 - c); } }
+  }
+  return cov;
+}
+
+let kernelCache = null;
+function gaussKernel() {
+  const key = S.sigma.toFixed(4);
+  if (kernelCache && kernelCache.key === key) return kernelCache.k;
+  const R = 4 * S.sigma, r = Math.ceil(R / PIX), k = new Float32Array(2 * r + 1); let s = 0;
+  for (let i = -r; i <= r; i++) { const x = i * PIX; k[i + r] = Math.abs(x) <= R ? Math.exp(-x * x / (2 * S.sigma * S.sigma)) : 0; s += k[i + r]; }
+  for (let i = 0; i < k.length; i++) k[i] /= s;
+  kernelCache = { key, k }; return k;
+}
+
+function expose(m, G) {
+  const { W, H } = G, E = new Float32Array(W * H);
+  if (S.psf === "gaussian") {                       // separable Gaussian, zero outside the grid
+    const k = gaussKernel(), r = (k.length - 1) / 2, T = new Float32Array(W * H);
+    for (let i = 0; i < H; i++) { const row = i * W;
+      for (let j = 0; j < W; j++) { let a = 0; const lo = Math.max(-r, -j), hi = Math.min(r, W - 1 - j);
+        for (let t = lo; t <= hi; t++) a += k[t + r] * m[row + j + t]; T[row + j] = a; } }
+    for (let j = 0; j < W; j++) for (let i = 0; i < H; i++) { let a = 0; const lo = Math.max(-r, -i), hi = Math.min(r, H - 1 - i);
+      for (let t = lo; t <= hi; t++) a += k[t + r] * T[(i + t) * W + j]; E[i * W + j] = a; }
+    return E;
+  }
+  // weight table (Fig. 4): every 3.5 nm cell spreads its weight evenly -> box sums from an integral image
+  const n = Math.round(LAM / PIX), h = (n - 1) / 2, I = new Float64Array((W + 1) * (H + 1));
+  for (let i = 0; i < H; i++) { let acc = 0; for (let j = 0; j < W; j++) { acc += m[i * W + j]; I[(i + 1) * (W + 1) + j + 1] = I[i * (W + 1) + j + 1] + acc; } }
+  const box = (r0, c0, r1, c1) => { r0 = Math.max(0, r0); c0 = Math.max(0, c0); r1 = Math.min(H - 1, r1); c1 = Math.min(W - 1, c1);
+    if (r1 < r0 || c1 < c0) return 0; return I[(r1 + 1) * (W + 1) + c1 + 1] - I[r0 * (W + 1) + c1 + 1] - I[(r1 + 1) * (W + 1) + c0] + I[r0 * (W + 1) + c0]; };
+  let sum = 0; for (const row of FIG4) for (const v of row) sum += v;
+  const half = 2;
+  for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) { let a = 0;
+    for (let ai = -half; ai <= half; ai++) for (let bj = -half; bj <= half; bj++) { const w = FIG4[ai + half][bj + half]; if (!w) continue;
+      a += w / sum / (n * n) * box(i - ai * n - h, j - bj * n - h, i - ai * n + h, j - bj * n + h); }
+    E[i * W + j] = a; }
+  return E;
+}
+
+function sample(E, G, x, y) {
+  const fj = (x - G.x0) / G.p - 0.5, fi = (y - G.y0) / G.p - 0.5;
+  const j = Math.max(0, Math.min(G.W - 2, Math.floor(fj))), i = Math.max(0, Math.min(G.H - 2, Math.floor(fi)));
+  const tx = Math.max(0, Math.min(1, fj - j)), ty = Math.max(0, Math.min(1, fi - i)), W = G.W;
+  return (E[i * W + j] * (1 - tx) + E[i * W + j + 1] * tx) * (1 - ty) + (E[(i + 1) * W + j] * (1 - tx) + E[(i + 1) * W + j + 1] * tx) * ty;
+}
+
+function edgeDisp(E, G, level, x, y, nx, ny, T = 10, h = 0.25) {
+  // signed distance along (nx, ny) to the printed edge (printed -> not printed crossing nearest to the point)
+  let best = Infinity, prevT = -T, prev = sample(E, G, x - T * nx, y - T * ny) - level;
+  for (let t = -T + h; t <= T + 1e-9; t += h) {
+    const v = sample(E, G, x + t * nx, y + t * ny) - level;
+    if (prev >= 0 && v < 0) { const tc = prevT + h * prev / (prev - v); if (Math.abs(tc) < Math.abs(best)) best = tc; }
+    prev = v; prevT = t;
+  }
+  if (best === Infinity) return sample(E, G, x, y) >= level ? T : -T;
+  return best;
+}
+
+// ======================================================================= evaluation
+function evaluate(maskCov, ctx) {
+  const { G, tcov, geo, gauges, tArea } = ctx, level = S.thr / S.dose;
+  const E = expose(maskCov, G), N = G.W * G.H, P = new Uint8Array(N), T = new Uint8Array(N);
+  const pf = printedFraction(E, G, level);              // sub-pixel printed area per pixel
+  let inter = 0, uni = 0, xor = 0;
+  for (let k = 0; k < N; k++) { P[k] = E[k] >= level ? 1 : 0; T[k] = tcov[k] > 0.5 ? 1 : 0;
+    inter += Math.min(pf[k], tcov[k]); uni += Math.max(pf[k], tcov[k]); xor += Math.abs(pf[k] - tcov[k]); }
+  const px2 = G.p * G.p, e = [];
+  for (const poly of geo.polys) for (let k = 0; k < poly.length; k++) {
+    const a = poly[k], b = poly[(k + 1) % poly.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const t = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], n = [t[1], -t[0]], m = Math.max(1, Math.round(L));
+    for (let s = 0; s < m; s++) { const u = (s + 0.5) / m * L; if (Math.min(u, L - u) < FRAG.corner) continue;
+      e.push(Math.abs(edgeDisp(E, G, level, a[0] + u * t[0], a[1] + u * t[1], n[0], n[1]))); }
+  }
+  const corners = [];
+  for (const poly of geo.polys) { const n = poly.length;
+    for (let k = 0; k < n; k++) { const v = poly[k], a = poly[(k + n - 1) % n], b = poly[(k + 1) % n];
+      const din = [v[0] - a[0], v[1] - a[1]], dout = [b[0] - v[0], b[1] - v[1]], li = Math.hypot(...din), lo = Math.hypot(...dout);
+      let bx = din[1] / li + dout[1] / lo, by = -din[0] / li - dout[0] / lo; const bl = Math.hypot(bx, by); bx /= bl; by /= bl;
+      corners.push(Math.abs(edgeDisp(E, G, level, v[0], v[1], bx, by))); } }
+  const le = geo.segs.filter(g => g.kind === LINE_END).map(g => -edgeDisp(E, G, level, g.site[0], g.site[1], g.n[0], g.n[1]));
+  const cd = gauges.map(([name, x, y, dir]) => { const [dx, dy] = dir === "h" ? [1, 0] : [0, 1], w = 10.5 / 2;
+    return [name, 10.5 + edgeDisp(E, G, level, x + w * dx, y + w * dy, dx, dy) + edgeDisp(E, G, level, x - w * dx, y - w * dy, -dx, -dy)]; });
+  const topo = topology(T, P, G.W, G.H);
+  const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN, max = a => a.length ? Math.max(...a) : NaN;
+  const cdErr = cd.map(([, w]) => Math.abs(w - 10.5));
+  return { E, P, T, level, metrics: { mismatch_pct: 100 * xor * px2 / tArea, mismatch_nm2: xor * px2, iou: inter / uni,
+    epe_mean: mean(e), epe_max: max(e), corner: mean(corners), line_end_mean: mean(le), line_end_max: max(le),
+    cd_err_mean: mean(cdErr), cd_err_max: max(cdErr), ...topo }, cd };
+}
+
+function printedFraction(E, G, level) {
+  // fraction of each pixel above the threshold: 0.5 + (E - level) / (|grad E| * pixel), clipped to [0, 1]
+  const { W, H, p } = G, f = new Float32Array(W * H);
+  for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) {
+    const k = i * W + j, v = E[k] - level;
+    const gx = (E[i * W + Math.min(W - 1, j + 1)] - E[i * W + Math.max(0, j - 1)]) / 2, gy = (E[Math.min(H - 1, i + 1) * W + j] - E[Math.max(0, i - 1) * W + j]) / 2;
+    const g = Math.hypot(gx, gy);
+    f[k] = g > 1e-9 ? Math.max(0, Math.min(1, 0.5 + v / g)) : (v >= 0 ? 1 : 0);
+  }
+  return f;
+}
+
+function topology(T, P, W, H) {
+  const label = (B) => { const L = new Int32Array(W * H); let n = 0; const st = [];
+    for (let k = 0; k < W * H; k++) if (B[k] && !L[k]) { n++; L[k] = n; st.push(k);
+      while (st.length) { const q = st.pop(), i = (q / W) | 0, j = q % W;
+        for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) { const ii = i + di, jj = j + dj;
+          if (ii < 0 || jj < 0 || ii >= H || jj >= W) continue; const r = ii * W + jj; if (B[r] && !L[r]) { L[r] = n; st.push(r); } } } }
+    return [L, n]; };
+  const [lt, nt] = label(T), [lp, np] = label(P), perP = new Map(), perT = new Map();
+  for (let k = 0; k < W * H; k++) if (lt[k] && lp[k]) {
+    if (!perP.has(lp[k])) perP.set(lp[k], new Set()); perP.get(lp[k]).add(lt[k]);
+    if (!perT.has(lt[k])) perT.set(lt[k], new Set()); perT.get(lt[k]).add(lp[k]); }
+  let bridges = 0, opens = 0; perP.forEach(s => { if (s.size > 1) bridges++; }); perT.forEach(s => { if (s.size > 1) opens++; });
+  return { bridges, opens, missing: nt - perT.size, spurious: np - perP.size, n_target: nt, n_printed: np };
+}
+
+// ===================================================================== pipeline
+function prepare() {
+  const c = S.cell === "Custom" ? { w: S.nx * LAM, h: S.ny * LAM, gauges: [] } : CELLS[S.cell];
+  const polys = loopsFromCells(S.nx, S.ny, S.bits);
+  const geo = buildGeometry(polys);
+  const G = makeGrid(c, S.extras);
+  const tcov = rasterPolygons(polys, G);
+  let tArea = 0; for (let k = 0; k < S.bits.length; k++) tArea += S.bits[k] * LAM * LAM;
+  S.ctx = { c, geo, G, tcov, tArea, gauges: S.cell === "Custom" ? [] : c.gauges };
+  if (!S.offsets || S.offsets.length !== geo.segs.length) S.offsets = new Float64Array(geo.segs.length);
+}
+
+function opcMaskCov() { const polys = maskPolygons(S.ctx.geo, S.offsets); return applyExtras(rasterPolygons(polys, S.ctx.G), S.extras, S.ctx.G); }
+
+function recompute(which = "both") {
+  if (!S.ctx) prepare();
+  if (which !== "opc") S.orig = evaluate(S.ctx.tcov.slice(), S.ctx);
+  S.opc = evaluate(opcMaskCov(), S.ctx);
+  renderAll();
+}
+
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+async function runOpc() {
+  if (S.busy) return; S.busy = true; setBusy(true);
+  const { geo, G } = S.ctx, segs = geo.segs, level = S.thr / S.dose, d = new Float64Array(segs.length);
+  S.history = [];
+  for (let k = 0; k <= S.iters; k++) {
+    S.offsets = d.slice();
+    const cov = opcMaskCov(), E = expose(cov, G);
+    let xor = 0, sq = 0, mx = 0;
+    const pf = printedFraction(E, G, level);
+    for (let q = 0; q < cov.length; q++) xor += Math.abs(pf[q] - S.ctx.tcov[q]);
+    const epe = segs.map(g => edgeDisp(E, G, level, g.site[0], g.site[1], g.n[0], g.n[1]));
+    for (const v of epe) { sq += v * v; mx = Math.max(mx, Math.abs(v)); }
+    S.history.push({ it: k, mismatch: 100 * xor * G.p * G.p / S.ctx.tArea, rms: Math.sqrt(sq / epe.length), max: mx });
+    document.getElementById("progress").textContent =
+      `iteration ${k}/${S.iters} · mismatch ${S.history[k].mismatch.toFixed(2)} % · EPE rms ${S.history[k].rms.toFixed(3)} nm`;
+    drawSpark();
+    if (k === S.iters) break;
+    for (let i = 0; i < segs.length; i++) d[i] = Math.max(segs[i].lo, Math.min(segs[i].hi, d[i] - S.damp * epe[i]));
+    if (k % 5 === 0) { S.opc = evaluate(cov, S.ctx); renderRow(1); renderMetrics(); }
+    await nextFrame();
+  }
+  S.offsets = d; S.sel = -1; recompute("opc"); S.busy = false; setBusy(false); toast("OPC finished");
+}
+
+// ======================================================================= rendering
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(x => x + x).join(""); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+
+function viewOf() {
+  const c = S.ctx.c; let x0 = -8, y0 = -8, x1 = c.w + 8, y1 = c.h + 8;
+  for (const r of S.extras) { x0 = Math.min(x0, r.x0 - 4); y0 = Math.min(y0, r.y0 - 4); x1 = Math.max(x1, r.x1 + 4); y1 = Math.max(y1, r.y1 + 4); }
+  return { x0, y0, w: x1 - x0, h: y1 - y0 };
+}
+
+function setupCanvas(cv, view) {
+  const wcss = cv.parentElement.clientWidth || 200, maxH = Math.max(220, window.innerHeight * 0.42);
+  let s = wcss / view.w; if (view.h * s > maxH) s = maxH / view.h;
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width = view.w * s + "px"; cv.style.height = view.h * s + "px";
+  cv.width = Math.round(view.w * s * dpr); cv.height = Math.round(view.h * s * dpr);
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr * s, 0, 0, dpr * s, -view.x0 * dpr * s, -view.y0 * dpr * s);
+  ctx.fillStyle = css("--panel"); ctx.fillRect(view.x0, view.y0, view.w, view.h);
+  cv._view = view; cv._s = s; return ctx;
+}
+
+function pathPoly(ctx, poly) { ctx.moveTo(poly[0][0], poly[0][1]); for (let k = 1; k < poly.length; k++) ctx.lineTo(poly[k][0], poly[k][1]); ctx.closePath(); }
+function dashedTarget(ctx, s) {
+  ctx.save(); ctx.strokeStyle = css("--target"); ctx.lineWidth = 1.1 / s; ctx.setLineDash([3 / s, 2 / s]);
+  ctx.beginPath(); for (const p of S.ctx.geo.polys) pathPoly(ctx, p); ctx.stroke(); ctx.restore();
+}
+function scaleBar(ctx, view, s) {
+  const L = 10, x = view.x0 + view.w - 4 - L, y = view.y0 + view.h - 4;
+  ctx.save(); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2 / s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + L, y); ctx.stroke();
+  ctx.fillStyle = css("--ink-2"); ctx.font = `${10 / s}px ${css("--font-mono")}`; ctx.textAlign = "center"; ctx.fillText("10 nm", x + L / 2, y - 3 / s); ctx.restore();
+}
+
+function imageLayer(ctx, G, fill) {
+  const off = document.createElement("canvas"); off.width = G.W; off.height = G.H;
+  const oc = off.getContext("2d"), img = oc.createImageData(G.W, G.H); fill(img.data); oc.putImageData(img, 0, 0);
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(off, G.x0, G.y0, G.W * G.p, G.H * G.p); ctx.restore();
+}
+
+function contour(ctx, E, G, level, color, s) {
+  // marching squares on pixel centers
+  const { W, H, x0, y0, p } = G, X = j => x0 + (j + 0.5) * p, Y = i => y0 + (i + 0.5) * p;
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.6 / s; ctx.beginPath();
+  for (let i = 0; i < H - 1; i++) for (let j = 0; j < W - 1; j++) {
+    const a = E[i * W + j] - level, b = E[i * W + j + 1] - level, c = E[(i + 1) * W + j + 1] - level, d = E[(i + 1) * W + j] - level;
+    const code = (a >= 0 ? 8 : 0) | (b >= 0 ? 4 : 0) | (c >= 0 ? 2 : 0) | (d >= 0 ? 1 : 0);
+    if (code === 0 || code === 15) continue;
+    const top = [X(j) + p * a / (a - b), Y(i)], right = [X(j + 1), Y(i) + p * b / (b - c)];
+    const bottom = [X(j) + p * d / (d - c), Y(i + 1)], left = [X(j), Y(i) + p * a / (a - d)];
+    const seg = (u, v) => { ctx.moveTo(u[0], u[1]); ctx.lineTo(v[0], v[1]); };
+    switch (code) {
+      case 1: case 14: seg(left, bottom); break; case 2: case 13: seg(bottom, right); break;
+      case 3: case 12: seg(left, right); break; case 4: case 11: seg(top, right); break;
+      case 6: case 9: seg(top, bottom); break; case 7: case 8: seg(left, top); break;
+      case 5: seg(left, top); seg(bottom, right); break; case 10: seg(top, right); seg(left, bottom); break;
+    }
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function drawMask(cv, maskPolys, extras, editable) {
+  const view = viewOf(), ctx = setupCanvas(cv, view), s = cv._s, mc = css("--mask");
+  if (S.cell === "Custom" && !editable && S.tool === "cells") {        // lambda grid for target drawing
+    ctx.save(); ctx.strokeStyle = css("--line"); ctx.lineWidth = 0.6 / s; ctx.beginPath();
+    for (let j = 0; j <= S.nx; j++) { ctx.moveTo(j * LAM, 0); ctx.lineTo(j * LAM, S.ny * LAM); }
+    for (let i = 0; i <= S.ny; i++) { ctx.moveTo(0, i * LAM); ctx.lineTo(S.nx * LAM, i * LAM); }
+    ctx.stroke(); ctx.restore();
+  }
+  ctx.save(); ctx.beginPath(); for (const p of maskPolys) pathPoly(ctx, p);
+  ctx.globalAlpha = 0.28; ctx.fillStyle = mc; ctx.fill("nonzero"); ctx.globalAlpha = 1; ctx.strokeStyle = mc; ctx.lineWidth = 1.3 / s; ctx.stroke(); ctx.restore();
+  for (const r of extras) { ctx.save(); ctx.lineWidth = 1.2 / s;
+    if (r.type === "add") { ctx.globalAlpha = 0.28; ctx.fillStyle = mc; ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.globalAlpha = 1; ctx.strokeStyle = mc; }
+    else { ctx.setLineDash([2 / s, 2 / s]); ctx.strokeStyle = css("--miss"); }
+    ctx.strokeRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.restore(); }
+  dashedTarget(ctx, s);
+  if (editable && S.sel >= 0) { const g = S.ctx.geo.segs[S.sel], d = S.offsets[S.sel];
+    ctx.save(); ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3 / s; ctx.lineCap = "round"; ctx.beginPath();
+    ctx.moveTo(g.a[0] + d * g.n[0], g.a[1] + d * g.n[1]); ctx.lineTo(g.b[0] + d * g.n[0], g.b[1] + d * g.n[1]); ctx.stroke(); ctx.restore(); }
+  if (S.drag) { ctx.save(); ctx.strokeStyle = css("--accent"); ctx.lineWidth = 1 / s; ctx.setLineDash([3 / s, 2 / s]);
+    const r = normRect(S.drag); ctx.strokeRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.restore(); }
+  scaleBar(ctx, view, s);
+}
+
+function drawExposure(cv, res, color) {
+  const view = viewOf(), ctx = setupCanvas(cv, view), s = cv._s, G = S.ctx.G;
+  const stops = ["--heat0", "--heat1", "--heat2", "--heat3"].map(n => hexRgb(css(n))), pos = [0, 0.25, 0.6, 1];
+  imageLayer(ctx, G, (data) => { const E = res.E;
+    for (let k = 0; k < E.length; k++) { const v = Math.max(0, Math.min(1, E[k])); let q = 0; while (q < 2 && v > pos[q + 1]) q++;
+      const t = (v - pos[q]) / (pos[q + 1] - pos[q]), a = stops[q], b = stops[q + 1];
+      data[4 * k] = a[0] + (b[0] - a[0]) * t; data[4 * k + 1] = a[1] + (b[1] - a[1]) * t; data[4 * k + 2] = a[2] + (b[2] - a[2]) * t; data[4 * k + 3] = 255; } });
+  contour(ctx, res.E, G, res.level, color, s); dashedTarget(ctx, s); scaleBar(ctx, view, s);
+}
+
+function drawDeveloped(cv, res, color) {
+  const view = viewOf(), ctx = setupCanvas(cv, view), s = cv._s, G = S.ctx.G;
+  const pc = hexRgb(color), mc = hexRgb(css("--miss")), bg = hexRgb(css("--panel"));
+  imageLayer(ctx, G, (data) => { for (let k = 0; k < res.P.length; k++) { let c = bg, a = 255;
+      if (res.P[k] && res.T[k]) c = pc.map((v, i) => v * 0.45 + bg[i] * 0.55); else if (res.P[k] !== res.T[k]) c = mc;
+      data[4 * k] = c[0]; data[4 * k + 1] = c[1]; data[4 * k + 2] = c[2]; data[4 * k + 3] = a; } });
+  contour(ctx, res.E, G, res.level, color, s); dashedTarget(ctx, s); scaleBar(ctx, view, s);
+}
+
+const C = id => document.getElementById(id);
+function renderRow(r) {
+  if (r === 0) { drawMask(C("c00"), S.ctx.geo.polys, [], false); drawExposure(C("c01"), S.orig, css("--before")); drawDeveloped(C("c02"), S.orig, css("--before")); }
+  else { drawMask(C("c10"), maskPolygons(S.ctx.geo, S.offsets), S.extras, true); drawExposure(C("c11"), S.opc, css("--after")); drawDeveloped(C("c12"), S.opc, css("--after")); }
+}
+
+const METRICS = [["mismatch_pct", "Mismatch area", "%", 2], ["iou", "IoU", "", 4, true], ["epe_mean", "EPE mean (edges)", "nm", 3],
+  ["epe_max", "EPE max (edges)", "nm", 3], ["cd_err_mean", "CD error mean", "nm", 3], ["cd_err_max", "CD error max", "nm", 3],
+  ["line_end_mean", "Line-end pull-back mean", "nm", 3], ["corner", "Corner error mean", "nm", 2],
+  ["bridges", "Bridges", "", 0], ["opens", "Opens", "", 0], ["missing", "Missing shapes", "", 0], ["spurious", "Extra shapes", "", 0]];
+function fmt(v, d) { return Number.isFinite(v) ? v.toFixed(d) : "—"; }
+function renderMetrics() {
+  const tb = document.querySelector("#mtable tbody"); tb.textContent = "";
+  for (const [k, label, unit, d, higher] of METRICS) {
+    const a = S.orig?.metrics[k], b = S.opc?.metrics[k], tr = document.createElement("tr");
+    let change = "—", cls = "";
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      if (d === 0) { change = b === a ? "same" : (b - a > 0 ? "+" : "") + (b - a); cls = b === a ? "" : (b < a ? "better" : "worse"); }
+      else if (Math.abs(a) > 1e-12) { const r = 100 * (b - a) / Math.abs(a); change = (r > 0 ? "+" : "") + r.toFixed(1) + " %";
+        cls = Math.abs(r) < 0.05 ? "" : ((higher ? r > 0 : r < 0) ? "better" : "worse"); }
+    }
+    for (const [txt, c] of [[label + (unit ? ` [${unit}]` : ""), ""], [fmt(a, d), ""], [fmt(b, d), ""], [change, cls]]) {
+      const td = document.createElement("td"); td.textContent = txt; if (c) td.className = c; tr.appendChild(td); }
+    tb.appendChild(tr);
+  }
+}
+
+function drawSpark() {
+  const cv = C("spark"), w = cv.clientWidth || 300, h = cv.clientHeight || 120, dpr = window.devicePixelRatio || 1;
+  cv.width = w * dpr; cv.height = h * dpr; const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const hs = S.history; ctx.font = `11px ${css("--font-mono")}`; ctx.fillStyle = css("--ink-2");
+  if (!hs.length) { ctx.fillText("Run OPC to see the mismatch drop per iteration.", 4, h / 2); return; }
+  const pad = { l: 40, r: 10, t: 8, b: 20 }, maxY = Math.max(...hs.map(q => q.mismatch)) * 1.05, maxX = Math.max(1, S.iters);
+  const X = i => pad.l + (w - pad.l - pad.r) * i / maxX, Y = v => pad.t + (h - pad.t - pad.b) * (1 - v / maxY);
+  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; ctx.beginPath();
+  for (const v of [0, maxY / 2, maxY]) { ctx.moveTo(pad.l, Y(v)); ctx.lineTo(w - pad.r, Y(v)); ctx.fillText(v.toFixed(1), 2, Y(v) + 4); }
+  ctx.stroke(); ctx.fillText("0", X(0) - 3, h - 4); ctx.fillText(String(maxX), X(maxX) - 12, h - 4); ctx.fillText("iteration", w / 2 - 25, h - 4);
+  ctx.strokeStyle = css("--after"); ctx.lineWidth = 2; ctx.beginPath();
+  hs.forEach((q, i) => i ? ctx.lineTo(X(q.it), Y(q.mismatch)) : ctx.moveTo(X(q.it), Y(q.mismatch))); ctx.stroke();
+  const last = hs[hs.length - 1]; ctx.fillStyle = css("--after"); ctx.beginPath(); ctx.arc(X(last.it), Y(last.mismatch), 3, 0, 7); ctx.fill();
+  ctx.fillStyle = css("--ink"); ctx.fillText(last.mismatch.toFixed(2) + " %", Math.min(X(last.it) + 6, w - 60), Y(last.mismatch) - 6);
+}
+
+function renderAll() { renderRow(0); renderRow(1); renderMetrics(); drawSpark(); updateSegOut(); }
+
+// ===================================================================== interaction
+function toNm(cv, ev) { const r = cv.getBoundingClientRect(), v = cv._view, s = cv._s; return [v.x0 + (ev.clientX - r.left) / s, v.y0 + (ev.clientY - r.top) / s]; }
+function normRect(d) { const sn = v => Math.round(v / PIX) * PIX; return { x0: sn(Math.min(d.a[0], d.b[0])), y0: sn(Math.min(d.a[1], d.b[1])), x1: sn(Math.max(d.a[0], d.b[0])), y1: sn(Math.max(d.a[1], d.b[1])) }; }
+
+function pickSegment(x, y) {
+  let best = -1, bd = 3;
+  S.ctx.geo.segs.forEach((g, k) => { const d = S.offsets[k], a = [g.a[0] + d * g.n[0], g.a[1] + d * g.n[1]], b = [g.b[0] + d * g.n[0], g.b[1] + d * g.n[1]];
+    const L2 = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2, t = Math.max(0, Math.min(1, ((x - a[0]) * (b[0] - a[0]) + (y - a[1]) * (b[1] - a[1])) / L2));
+    const dist = Math.hypot(x - a[0] - t * (b[0] - a[0]), y - a[1] - t * (b[1] - a[1])); if (dist < bd) { bd = dist; best = k; } });
+  return best;
+}
+
+let pending = 0;
+function scheduleOpc() { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => recompute("opc")); }
+function moveSel(delta) {
+  if (S.sel < 0 || S.busy) return; const g = S.ctx.geo.segs[S.sel];
+  S.offsets[S.sel] = Math.max(g.lo, Math.min(g.hi, Math.round((S.offsets[S.sel] + delta) * 100) / 100)); updateSegOut(); scheduleOpc();
+}
+function updateSegOut() {
+  const o = C("segOut");
+  if (S.sel < 0) { o.textContent = "no edge"; return; }
+  const g = S.ctx.geo.segs[S.sel], kind = ["edge", "convex corner", "concave corner", "line end"][g.kind];
+  o.textContent = `${kind} ${S.offsets[S.sel] >= 0 ? "+" : ""}${S.offsets[S.sel].toFixed(2)} nm`;
+}
+
+function bindCanvas(cv, row) {
+  cv.addEventListener("pointerdown", ev => {
+    if (S.busy || !S.ctx) return; const [x, y] = toNm(cv, ev);
+    if (row === 0) { if (S.cell === "Custom" && S.tool === "cells") { S.paint = toggleCell(x, y); cv.setPointerCapture(ev.pointerId); } return; }
+    if (S.tool === "select") { S.sel = pickSegment(x, y); renderRow(1); updateSegOut(); }
+    else if (S.tool === "add" || S.tool === "erase") { S.drag = { a: [x, y], b: [x, y] }; cv.setPointerCapture(ev.pointerId); }
+  });
+  cv.addEventListener("pointermove", ev => {
+    if (!S.ctx) return; const [x, y] = toNm(cv, ev);
+    if (row === 0 && S.paint !== undefined && S.paint !== null) { setCell(x, y, S.paint); return; }
+    if (row === 1 && S.drag) { S.drag.b = [x, y]; drawMask(C("c10"), maskPolygons(S.ctx.geo, S.offsets), S.extras, true); }
+  });
+  cv.addEventListener("pointerup", () => {
+    if (row === 0 && S.paint !== undefined && S.paint !== null) { S.paint = null; targetChanged(); return; }
+    if (row === 1 && S.drag) { const r = normRect(S.drag); S.drag = null;
+      if (r.x1 - r.x0 >= PIX && r.y1 - r.y0 >= PIX) { S.extras.push({ type: S.tool === "add" ? "add" : "erase", ...r }); S.ctx = null; prepare(); recompute(); }
+      else renderRow(1); }
+  });
+}
+
+function cellAt(x, y) { const j = Math.floor(x / LAM), i = Math.floor(y / LAM); return (i >= 0 && j >= 0 && i < S.ny && j < S.nx) ? i * S.nx + j : -1; }
+function toggleCell(x, y) { const k = cellAt(x, y); if (k < 0) return null; S.bits[k] = S.bits[k] ? 0 : 1; quickTarget(); return S.bits[k]; }
+function setCell(x, y, v) { const k = cellAt(x, y); if (k < 0 || S.bits[k] === v) return; S.bits[k] = v; quickTarget(); }
+function quickTarget() { const polys = loopsFromCells(S.nx, S.ny, S.bits); S.ctx.geo = { polys, segs: [] }; drawMask(C("c00"), polys, [], false); }
+function targetChanged() { S.offsets = null; S.history = []; S.ctx = null; prepare(); recompute(); }
+
+function loadCell(name) {
+  S.cell = name; const t = cellsFromRects(CELLS[name]); S.nx = t.nx; S.ny = t.ny; S.bits = t.bits;
+  S.extras = []; S.offsets = null; S.history = []; S.sel = -1; S.ctx = null; prepare();
+  C("cellsTool").disabled = name !== "Custom"; if (name !== "Custom" && S.tool === "cells") setTool("select");
+  recompute(); C("progress").textContent = "";
+}
+
+function setTool(v) {
+  S.tool = v; document.querySelectorAll("#toolSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
+  C("toolNote").textContent = { select: "Click an edge in the OPC mask, then move it with the buttons or arrow keys.",
+    add: "Drag in the OPC mask to add a rectangle (e.g. an assist feature).", erase: "Drag in the OPC mask to cut a rectangle out.",
+    cells: "Custom cell: click or drag on the original mask to toggle 3.5 nm cells of the target." }[v];
+  C("c10").classList.toggle("edit", v !== "cells"); C("c00").classList.toggle("edit", v === "cells"); renderAll();
+}
+function setBusy(b) { ["runOpc", "resetMask", "segMinus", "segPlus"].forEach(id => C(id).disabled = b); }
+
+let toastT = 0;
+function toast(msg) { const t = C("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
+
+// ======================================================================== export / import
+function stateJson() {
+  const m = k => ({ ...S[k].metrics, cd_nm: Object.fromEntries(S[k].cd.map(([n, w]) => [n, +w.toFixed(4)])) });
+  return { app: "Metal1 OPC Bench", saved: new Date().toISOString(),
+    conditions: { cell: S.cell, grid_nm: PIX, margin_nm: MARGIN, lambda_nm: LAM, psf: S.psf, psf_sigma_nm: S.psf === "gaussian" ? S.sigma : null,
+      psf_cutoff_nm: S.psf === "gaussian" ? 4 * S.sigma : null, psf_table: S.psf === "table" ? FIG4 : null, threshold: S.thr, dose: S.dose,
+      resist: "positive: dose*E >= threshold is developed away", opc: { iterations: S.iters, damping: S.damp, ...FRAG } },
+    target: { nx: S.nx, ny: S.ny, rows: Array.from({ length: S.ny }, (_, i) => Array.from(S.bits.slice(i * S.nx, (i + 1) * S.nx)).join("")) },
+    mask: { offsets_nm: Array.from(S.offsets, v => +v.toFixed(4)), extras: S.extras,
+      polygons_nm: maskPolygons(S.ctx.geo, S.offsets).map(p => p.map(v => [+v[0].toFixed(3), +v[1].toFixed(3)])) },
+    metrics: { original: m("orig"), opc: m("opc") }, history: S.history };
+}
+function csvText() {
+  const lines = ["metric,original_mask,opc_mask"];
+  for (const [k, label, unit] of METRICS) lines.push(`"${label}${unit ? " [" + unit + "]" : ""}",${S.orig.metrics[k]},${S.opc.metrics[k]}`);
+  for (const [n, w] of S.orig.cd) lines.push(`"CD ${n} [nm]",${w},${S.opc.cd.find(c => c[0] === n)[1]}`);
+  lines.push(`"conditions","cell=${S.cell} psf=${S.psf} sigma=${S.sigma} threshold=${S.thr} dose=${S.dose} grid=${PIX}nm",`);
+  return lines.join("\n");
+}
+function pngBlob() {
+  const ids = ["c00", "c01", "c02", "c10", "c11", "c12"].map(C), pad = 24, top = 60, colW = Math.max(...ids.map(c => c.width)), rowH = Math.max(...ids.map(c => c.height));
+  const out = document.createElement("canvas"); out.width = pad * 2 + 3 * colW + 2 * pad + 40; out.height = top + 2 * rowH + pad * 3 + 40;
+  const g = out.getContext("2d"); g.fillStyle = css("--panel"); g.fillRect(0, 0, out.width, out.height);
+  g.fillStyle = css("--ink"); g.font = `600 22px ${css("--font-ui")}`; g.fillText(`Metal1 OPC Bench — ${S.cell}`, pad, 34);
+  g.font = `14px ${css("--font-mono")}`; g.fillStyle = css("--ink-2");
+  g.fillText(`psf ${S.psf}${S.psf === "gaussian" ? " σ " + S.sigma.toFixed(3) + " nm" : ""} · threshold ${S.thr} · dose ${S.dose} · mismatch ${S.orig.metrics.mismatch_pct.toFixed(2)} → ${S.opc.metrics.mismatch_pct.toFixed(2)} % · IoU ${S.orig.metrics.iou.toFixed(3)} → ${S.opc.metrics.iou.toFixed(3)}`, pad, 54);
+  ids.forEach((c, k) => { const r = Math.floor(k / 3), q = k % 3; g.drawImage(c, pad + 40 + q * (colW + pad), top + pad + r * (rowH + pad)); });
+  g.save(); g.font = `600 15px ${css("--font-ui")}`; g.fillStyle = css("--ink-2");
+  ["original mask", "OPC mask"].forEach((t, r) => { g.save(); g.translate(pad + 14, top + pad + r * (rowH + pad) + rowH / 2); g.rotate(-Math.PI / 2); g.textAlign = "center"; g.fillText(t, 0, 0); g.restore(); });
+  g.restore();
+  return new Promise(res => out.toBlob(res, "image/png"));
+}
+
+let downloads = null;
+(async () => { try { downloads = await window.claude?.use?.("downloads"); } catch (e) { downloads = null; } })();
+async function saveFile(name, data, mime) {
+  if (downloads) {
+    try { await downloads.save({ filename: name, data }); toast("Saved " + name); }
+    catch (e) { toast(e && e.code === "declined" ? "Save cancelled" : "Could not save " + name + " here — use Copy instead"); }
+    return;
+  }
+  if (window.top !== window && typeof data === "string") { showDialog(name, data); return; }
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mime }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+function showDialog(title, text) { C("dlgTitle").textContent = title; C("dlgText").value = text; C("dlg").hidden = false; }
+const stamp = () => `${S.cell}_${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}`;
+
+function restore(j) {
+  const c = j.conditions || {};
+  S.cell = ["INV_X1", "NAND2_X4", "Custom"].includes(c.cell) ? c.cell : "Custom";
+  if (c.psf) S.psf = c.psf; if (c.psf_sigma_nm) S.sigma = c.psf_sigma_nm; if (c.threshold) S.thr = c.threshold; if (c.dose) S.dose = c.dose;
+  if (c.opc) { S.iters = c.opc.iterations ?? S.iters; S.damp = c.opc.damping ?? S.damp; }
+  S.nx = j.target.nx; S.ny = j.target.ny; S.bits = new Uint8Array(j.target.rows.join("").split("").map(Number));
+  S.extras = j.mask?.extras || []; S.history = j.history || []; S.ctx = null; S.offsets = null; prepare();
+  if (j.mask?.offsets_nm?.length === S.ctx.geo.segs.length) S.offsets = Float64Array.from(j.mask.offsets_nm);
+  syncControls(); recompute(); toast("Loaded");
+}
+
+// ======================================================================== controls
+function syncControls() {
+  const set = (id, v, f) => { C(id).value = v; C(id + "Out").textContent = f(v); };
+  set("sigma", S.sigma, v => (+v).toFixed(2) + " nm"); set("thr", S.thr, v => (+v).toFixed(2)); set("dose", S.dose, v => (+v).toFixed(2));
+  set("iters", S.iters, v => v); set("damp", S.damp, v => (+v).toFixed(2));
+  document.querySelectorAll("#cellSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S.cell));
+  document.querySelectorAll("#psfSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S.psf));
+  C("sigmaRow").hidden = S.psf !== "gaussian"; C("cellsTool").disabled = S.cell !== "Custom";
+}
+
+function init() {
+  document.querySelectorAll("#cellSeg button").forEach(b => b.addEventListener("click", () => { if (!S.busy) { loadCell(b.dataset.v); syncControls(); } }));
+  document.querySelectorAll("#psfSeg button").forEach(b => b.addEventListener("click", () => { if (S.busy) return; S.psf = b.dataset.v; syncControls(); recompute(); }));
+  document.querySelectorAll("#toolSeg button").forEach(b => b.addEventListener("click", () => { if (!b.disabled) setTool(b.dataset.v); }));
+  const slider = (id, key, f) => C(id).addEventListener("input", () => { S[key] = +C(id).value; C(id + "Out").textContent = f(S[key]);
+    if (["sigma", "thr", "dose"].includes(key) && !S.busy) { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => recompute()); } });
+  slider("sigma", "sigma", v => v.toFixed(2) + " nm"); slider("thr", "thr", v => v.toFixed(2)); slider("dose", "dose", v => v.toFixed(2));
+  slider("iters", "iters", v => v); slider("damp", "damp", v => v.toFixed(2));
+  C("runOpc").addEventListener("click", runOpc);
+  C("resetMask").addEventListener("click", () => { if (S.busy) return; S.offsets = null; S.extras = []; S.history = []; S.sel = -1; S.ctx = null; prepare(); recompute(); C("progress").textContent = ""; });
+  C("segMinus").addEventListener("click", () => moveSel(-0.5)); C("segPlus").addEventListener("click", () => moveSel(0.5));
+  document.addEventListener("keydown", ev => { if (S.sel < 0 || ev.target.tagName === "INPUT") return;
+    const step = ev.shiftKey ? 0.1 : 0.5;
+    if (ev.key === "ArrowUp" || ev.key === "ArrowRight") { moveSel(step); ev.preventDefault(); }
+    if (ev.key === "ArrowDown" || ev.key === "ArrowLeft") { moveSel(-step); ev.preventDefault(); }
+    if (ev.key === "Escape") { S.sel = -1; renderRow(1); updateSegOut(); } });
+  bindCanvas(C("c00"), 0); bindCanvas(C("c10"), 1);
+  C("exJson").addEventListener("click", () => saveFile(`opc_${stamp()}.json`, JSON.stringify(stateJson(), null, 1), "application/json"));
+  C("exCsv").addEventListener("click", () => saveFile(`opc_${stamp()}.csv`, csvText(), "text/csv"));
+  C("exPng").addEventListener("click", async () => saveFile(`opc_${stamp()}.png`, await pngBlob(), "image/png"));
+  C("exCopy").addEventListener("click", () => showDialog("Results JSON", JSON.stringify(stateJson(), null, 1)));
+  C("dlgCopy").addEventListener("click", () => { const t = C("dlgText"); navigator.clipboard?.writeText(t.value).then(() => toast("Copied"), () => { t.select(); toast("Press Ctrl/Cmd+C to copy"); }); });
+  C("dlgClose").addEventListener("click", () => C("dlg").hidden = true);
+  C("imJson").addEventListener("change", ev => { const f = ev.target.files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => { try { restore(JSON.parse(r.result)); } catch (e) { toast("That file is not a Metal1 OPC Bench JSON"); } }; r.readAsText(f); ev.target.value = ""; });
+  let rt = 0; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => S.ctx && renderAll(), 150); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => S.ctx && renderAll());
+  new MutationObserver(() => S.ctx && renderAll()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  syncControls(); loadCell("INV_X1"); runOpc();
+}
+init();
+</script>

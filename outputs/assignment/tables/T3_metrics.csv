@@ -1,0 +1,5 @@
+cell,mask,epe_mean,epe_max,corner,area_pct,area_nm2,iou,cd_err_mean,cd_err_max,n_target,n_printed,bridges,opens,missing,spurious,line_end_pullback_mean,line_end_pullback_max,line_ends
+INV_X1,without OPC,0.7219,3.5287,4.6498,18.1209,599.3481,0.8225,0.6209,0.6209,3,3,0,0,0,0,2.9873,3.0442,8
+INV_X1,with OPC,0.0406,0.2191,1.8633,3.2749,108.3183,0.9675,0.0113,0.0222,3,3,0,0,0,0,0.0026,0.005,8
+NAND2_X4,without OPC,0.561,3.5287,4.5075,14.8084,1469.3642,0.8556,0.5715,0.6219,5,5,0,0,0,0,2.9566,3.0442,16
+NAND2_X4,with OPC,0.0326,0.2274,1.8499,2.62,259.9668,0.974,0.0259,0.1244,5,5,0,0,0,0,0.0059,0.0098,16

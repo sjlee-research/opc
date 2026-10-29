@@ -1,0 +1,142 @@
+optics:
+  model: intensity
+  wavelength_nm: 13.5
+  NA: 0.55
+  immersion_index: 1.0
+  illumination: annular
+  sigma: 0.7
+  sigma_in: 0.3
+  sigma_out: 0.7
+  pole_angle_deg: 30.0
+  source_grid: 41
+  num_kernels: 24
+  gaussian_sigma_nm: null
+  pixel_compensation: true
+  psf: gaussian
+  psf_sigma_nm: null
+  psf_radius_sigma: 4.0
+  psf_array: null
+  psf_array_cell_nm: 3.5
+resist:
+  threshold: 0.5
+  threshold_rule: edge
+  diffusion_nm: 0.0
+  anchor_cd_nm: 60.0
+  anchor_pitch_nm: 180.0
+grid:
+  pixel_nm: 0.5
+  margin_nm: 100.0
+  max_pixels: 4096
+process:
+  doses:
+  - 0.95
+  - 1.0
+  - 1.05
+  defocus_nm:
+  - 0.0
+patterns:
+  cd_nm: 10.5
+  line_length_nm: 1000.0
+  dense_pitches_nm:
+  - 120.0
+  - 180.0
+  - 240.0
+  num_lines: 7
+  line_end_gap_nm: 80.0
+  line_end_pitch_nm: 180.0
+  arm_length_nm: 500.0
+  contact_nm: 90.0
+  contact_pitch_nm: 180.0
+  through_pitch_nm:
+  - 120
+  - 130
+  - 140
+  - 150
+  - 165
+  - 180
+  - 200
+  - 220
+  - 240
+  - 270
+  - 300
+  - 350
+  - 400
+  - 500
+  - 600
+  - 800
+  iso_pitch_nm: 2400.0
+fragment:
+  corner_len_nm: 3.5
+  segment_len_nm: 7.0
+  min_segment_nm: 1.75
+  line_end_max_nm: 14.0
+  corner_site: 1.0
+  max_range_nm: 100.0
+mrc:
+  min_width_nm: 3.5
+  min_space_nm: 3.5
+rule:
+  bias_spaces_nm:
+  - 60
+  - 70
+  - 80
+  - 90
+  - 105
+  - 120
+  - 140
+  - 160
+  - 180
+  - 210
+  - 240
+  - 300
+  - 400
+  - 600
+  - 1000
+  serif_nm: 10.0
+  inner_serif_nm: 6.0
+  hammer_nm: 6.0
+  line_end_ext_nm: null
+  max_bias_nm: 25.0
+mbopc:
+  iterations: 30
+  damping: 0.5
+  adaptive: false
+  adapt_up: 1.25
+  adapt_down: 0.5
+  damping_min: 0.1
+  damping_max: 1.2
+  init: none
+  pw_aware: false
+  pw_nominal_weight: 0.5
+  pw_dose: 0.03
+  pw_defocus_nm: 40.0
+  max_out_nm: 7.0
+  max_in_nm: 3.5
+  mrc_guard: true
+  tol_rms_nm: 0.2
+  tol_max_nm: 0.5
+ilt:
+  iterations: 150
+  lr: 0.08
+  mask_steepness: 4.0
+  resist_steepness: 60.0
+  binarization_weight: 0.02
+  tv_weight: 0.002
+  corner_weight: 0.1
+device: cpu
+dtype: float32
+derived:
+  psf_sigma_nm: 5.154545454545454
+  psf_cutoff_nm: 20.618181818181817
+  threshold: 0.5
+  grids:
+  - cell: INV_X1
+    pixel_nm: 0.5
+    pixels: 550 x 800
+    area_nm: 275 x 400
+    origin_nm: (-106, -105.5)
+  - cell: NAND2_X4
+    pixel_nm: 0.5
+    pixels: 750 x 800
+    area_nm: 375 x 400
+    origin_nm: (-109, -105.5)

@@ -1,0 +1,11 @@
+cell,evaluated with,mask,epe_mean,epe_max,corner,area_pct,area_nm2,iou,cd_err_mean,cd_err_max,n_target,n_printed,bridges,opens,missing,spurious
+INV_X1,Hopkins,original mask,1.2974,32.0463,5.1912,21.1844,700.6751,0.8058,0.8385,1.0151,3,3,0,0,0,0
+INV_X1,Hopkins,intensity-model OPC mask,0.6875,1.5447,2.3173,15.2193,503.3798,0.8648,1.4613,1.6832,3,3,0,0,0,0
+INV_X1,Hopkins,Hopkins-model OPC mask,0.0918,0.9783,2.2102,4.8808,161.4336,0.9519,0.0991,0.1297,3,3,0,0,0,0
+INV_X1,intensity,original mask,0.7219,3.5287,4.6498,18.1209,599.3481,0.8225,0.6209,0.6209,3,3,0,0,0,0
+INV_X1,intensity,intensity-model OPC mask,0.0406,0.2191,1.8633,3.2749,108.3183,0.9675,0.0113,0.0222,3,3,0,0,0,0
+NAND2_X4,Hopkins,original mask,0.9284,31.6579,5.2111,18.408,1826.5326,0.8323,1.1392,1.6216,5,5,0,0,0,0
+NAND2_X4,Hopkins,intensity-model OPC mask,0.6681,1.5528,2.3649,14.2116,1410.142,0.8733,1.602,2.0987,5,5,0,0,0,0
+NAND2_X4,Hopkins,Hopkins-model OPC mask,0.0829,1.0381,2.2473,4.1791,414.6747,0.9589,0.1485,0.6906,5,5,0,0,0,0
+NAND2_X4,intensity,original mask,0.561,3.5287,4.5075,14.8084,1469.3642,0.8556,0.5715,0.6219,5,5,0,0,0,0
+NAND2_X4,intensity,intensity-model OPC mask,0.0326,0.2274,1.8499,2.62,259.9668,0.974,0.0259,0.1244,5,5,0,0,0,0

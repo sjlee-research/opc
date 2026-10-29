@@ -1,0 +1,59 @@
+# Assignment setup: Metal1 of INV_X1 / NAND2_X4 (line width 10.5 nm = 3 lambda, lambda = 3.5 nm).
+# Main model = intensity superposition: exposure E(x) = sum over mask points of transmission * PSF(x - x').
+# The optics block also defines the High-NA EUV conditions used (a) to size the Gaussian PSF
+# (sigma = 0.21 * wavelength / NA) and (b) for the Hopkins interference-model comparison.
+optics:
+  model: intensity          # intensity (light-amount superposition) | hopkins (interference) | gaussian (coherent)
+  psf: gaussian             # gaussian | array (weight table, see psf_array)
+  psf_sigma_nm: null        # null -> 0.21 * wavelength / NA = 5.15 nm
+  psf_radius_sigma: 4.0     # PSF truncated at 4 sigma (20.6 nm) and renormalized to sum 1
+  psf_array: null           # e.g. the 5x5 weight table [[0,0.5,1,0.5,0],[0.5,4,5,4,0.5],[1,5,10,5,1],...]
+  psf_array_cell_nm: 3.5
+  wavelength_nm: 13.5       # EUV
+  NA: 0.55                  # High-NA EUV
+  immersion_index: 1.0
+  illumination: annular     # Hopkins comparison only
+  sigma_in: 0.3
+  sigma_out: 0.7
+  source_grid: 41
+  num_kernels: 24
+
+resist:
+  threshold: 0.5            # positive resist: E >= 0.5 is developed away (trench -> Metal1 by damascene fill)
+  threshold_rule: edge      # used when threshold is null (Hopkins comparison): edge of a large feature prints on target
+
+grid:
+  pixel_nm: 0.5             # 1 grid cell = 0.5 nm (lambda / 7)
+  margin_nm: 100.0          # computation area = cell bounding box + 100 nm on every side
+  max_pixels: 4096
+
+process:
+  doses: [0.95, 1.0, 1.05]  # exposure latitude used for the PV band
+  defocus_nm: [0.0]         # the intensity model has no focus term
+
+patterns:
+  cd_nm: 10.5
+
+fragment:
+  corner_len_nm: 3.5        # 1 lambda next to every corner
+  segment_len_nm: 7.0       # 2 lambda
+  min_segment_nm: 1.75
+  line_end_max_nm: 14.0     # 10.5 nm line ends are single segments
+  corner_site: 1.0          # control site 3.5 nm away from each vertex (corner-rounding allowance)
+  max_range_nm: 100.0
+
+mrc:
+  min_width_nm: 3.5
+  min_space_nm: 3.5
+
+mbopc:
+  iterations: 30
+  damping: 0.5
+  max_out_nm: 7.0
+  max_in_nm: 3.5
+  mrc_guard: true
+  tol_rms_nm: 0.2
+  tol_max_nm: 0.5
+
+device: cpu
+dtype: float32
