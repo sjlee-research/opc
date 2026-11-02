@@ -797,7 +797,7 @@ def fig_light_distribution(dist2d, pixel, sigma, radius, table, path=None):
     h = dist2d.shape[0] // 2 * pixel
     ax.imshow(dist2d / dist2d.max(), extent=(-h, h, -h, h), origin="lower", cmap=CMAP_INTENSITY, vmin=0, vmax=1)
     ax.add_patch(plt.Circle((0, 0), radius, fill=False, color=INK_2, lw=0.6, ls=":"))
-    ax.text(0, -radius * 0.93, f"4σ = {radius:.1f} nm", ha="center", va="bottom", fontsize=5.5, color=INK_2)
+    ax.text(0, -radius * 0.93, f"4σ = {radius:.2f} nm", ha="center", va="bottom", fontsize=5.5, color=INK_2)
     ax.set_xticks([-20, 0, 20])
     ax.set_yticks([-20, 0, 20])
     ax.set_xlabel("x [nm]", fontsize=6.5, labelpad=1)
@@ -809,7 +809,7 @@ def fig_light_distribution(dist2d, pixel, sigma, radius, table, path=None):
     ax.imshow(table, cmap=CMAP_INTENSITY, vmin=0, vmax=table.max() * 1.3)
     for i in range(n):
         for j in range(n):
-            ax.text(j, i, f"{table[i, j]:.1f}", ha="center", va="center", fontsize=5.5,
+            ax.text(j, i, f"{table[i, j]:.2f}", ha="center", va="center", fontsize=5.5,
                     color="white" if table[i, j] > 0.55 * table.max() else INK)
     ax.set_xticks(range(n), [f"{(j - n // 2) * 3.5:g}" for j in range(n)])
     ax.set_yticks(range(n), [f"{(i - n // 2) * 3.5:g}" for i in range(n)])
@@ -911,7 +911,7 @@ def fig_cell_result(name, target, rows, path=None, width_in=COL_W_IN, window=Non
                 ax.tick_params(labelbottom=False)
             else:
                 ax.set_xlabel("x [nm]", fontsize=6 * f, labelpad=1)
-        fig.text(0.02 / W, (y0 + ph / 2) / H, f"{row['label']}\nIoU {m['iou']:.3f}, {m['area_pct']:.1f} %",
+        fig.text(0.02 / W, (y0 + ph / 2) / H, f"{row['label']}\nIoU {m['iou']:.2f}, {m['area_pct']:.2f} %",
                  rotation=90, ha="left", va="center", fontsize=6 * f, color=row["color"], fontweight="bold")
     cax = fig.add_axes([(left + pw + gap) / W, 0.10 * f / H, pw / W, 0.05 * f / H])
     cb = fig.colorbar(im, cax=cax, orientation="horizontal")
@@ -1045,7 +1045,7 @@ def fig_model_compare(rows, path=None):
             cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.02)
             cb.ax.tick_params(labelsize=6)
             cb.outline.set_edgecolor(AXIS)
-            _panel_legend(ax, [Line2D([], [], color=C_PRINT_BEFORE, lw=1.3, label=f"threshold {thr:.3f}"),
+            _panel_legend(ax, [Line2D([], [], color=C_PRINT_BEFORE, lw=1.3, label=f"threshold {thr:g}"),
                                Line2D([], [], color=INK, ls=(0, (3, 2)), lw=1, label="target")])
         ax = axes[r][2]
         hs = []

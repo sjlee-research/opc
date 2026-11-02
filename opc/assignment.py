@@ -174,8 +174,8 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
                    "line_end_pullback_max": round(float(le.max()), 4), "line_ends": int(len(le))}
             metric_rows.append(row)
         for (g, wb), (_, wa) in zip(fb["cd"], fa["cd"]):
-            cd_rows.append({"cell": p.name, "gauge": g, "target_nm": 10.5, "without_opc_nm": round(wb, 3),
-                            "with_opc_nm": round(wa, 3)})
+            cd_rows.append({"cell": p.name, "gauge": g, "target_nm": 10.5, "without_opc_nm": round(wb, 4),
+                            "with_opc_nm": round(wa, 4)})
         M["cells"][p.name].update(before={**_scalar(fb), "line_end_pullback_mean": float(le_b.mean()),
                                           "line_end_pullback_max": float(le_b.max())},
                                   after={**_scalar(fa), "line_end_pullback_mean": float(le_a.mean()),
@@ -204,7 +204,7 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
         curves[name] = dict(it=[h["iteration"] for h in mb.history], epe_rms=[h["rms"] for h in mb.history],
                             epe_max=[h["max_abs"] for h in mb.history], mism=[f["area_pct"] for f in fm],
                             iou=[f["iou"] for f in fm], conv=mb.converged_at)
-        M["cells"][name]["progress"] = {"mismatch_pct": [round(f["area_pct"], 3) for f in fm],
+        M["cells"][name]["progress"] = {"mismatch_pct": [round(f["area_pct"], 4) for f in fm],
                                         "iou": [round(f["iou"], 4) for f in fm],
                                         "epe_rms": [round(h["rms"], 4) for h in mb.history]}
     nand = results["NAND2_X4"]
@@ -217,7 +217,7 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
 
     # ---- condition variation (separate from the correction effect) ------------------------------------
     cond_rows, dose_lines, sig_lines = [], {}, {}
-    sigmas = [4.0, 4.5, round(sigma, 3), 5.75, 6.5]
+    sigmas = [4.0, 4.5, sigma, 5.75, 6.5]
     sims_sigma = {}
     for s in sigmas:
         cs = copy.deepcopy(cfg)
@@ -329,8 +329,8 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
                      else r["fb" if tag == "original mask" else "fa"])
                 cd_h, cd_v = _hv_cd(f, g)
                 row = {"cell": name, "shadow": label, "s_nm": round(s, 3), "mask": tag,
-                       "area_pct": round(f["area_pct"], 3), "iou": round(f["iou"], 4), "cd_horizontal_nm": round(cd_h, 3),
-                       "cd_vertical_nm": round(cd_v, 3), "defects": f["bridges"] + f["opens"] + f["missing"]}
+                       "area_pct": round(f["area_pct"], 4), "iou": round(f["iou"], 4), "cd_horizontal_nm": round(cd_h, 4),
+                       "cd_vertical_nm": round(cd_v, 4), "defects": f["bridges"] + f["opens"] + f["missing"]}
                 sh_rows.append(row)
                 M["shadow"]["cells"][name].append(row)
     write_csv(tab_dir / "T7_mask_shadow.csv", sh_rows)
