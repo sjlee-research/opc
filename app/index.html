@@ -261,7 +261,7 @@ td.worse { color: var(--bad); }
           <button type="button" data-v="gaussian" aria-pressed="true">Gaussian</button>
           <button type="button" data-v="table" aria-pressed="false">Table</button></div></div>
         <div class="item" id="sigmaRow"><div class="top"><label for="sigma">σ</label><output id="sigmaOut"></output></div>
-          <input id="sigma" type="range" min="3" max="8" step="0.05" value="5.155"></div>
+          <input id="sigma" type="range" min="3" max="8" step="0.05" value="5.15"></div>
         <div class="item"><div class="top"><label for="thr">Threshold</label><output id="thrOut"></output></div>
           <input id="thr" type="range" min="0.3" max="0.7" step="0.01" value="0.5"></div>
         <div class="item"><div class="top"><label for="dose">Dose</label><output id="doseOut"></output></div>
@@ -320,7 +320,7 @@ const FRAG = { corner: 3.5, seg: 7, minSeg: 1.75, lineEndMax: 14, maxIn: 3.5, ma
 const NORMAL = 0, CONVEX = 1, CONCAVE = 2, LINE_END = 3;
 
 // ============================================================================ state
-const S = { cell: "INV_X1", psf: "gaussian", sigma: 5.155, thr: 0.5, dose: 1, iters: 30, damp: 0.5,
+const S = { cell: "INV_X1", psf: "gaussian", sigma: 0.21 * 13.5 / 0.55, thr: 0.5, dose: 1, iters: 30, damp: 0.5,
   bits: null, nx: 0, ny: 0, geo: null, grid: null, offsets: null, extras: [], history: [], sel: -1, tool: "select",
   orig: null, opc: null, busy: false };
 
@@ -657,7 +657,7 @@ async function runOpc() {
 function showProgress(k) {
   const bar = C("bar"), last = S.history[S.history.length - 1];
   if (k >= 0) { C("status").textContent = `Iteration ${k} of ${S.iters}`; bar.style.opacity = 1; bar.style.width = 100 * k / S.iters + "%"; return; }
-  C("status").textContent = last ? `${last.it} iterations · EPE rms ${last.rms.toFixed(3)} nm` : "";
+  C("status").textContent = last ? `${last.it} iterations · EPE rms ${last.rms.toFixed(2)} nm` : "";
   bar.style.opacity = 0; setTimeout(() => { if (!S.busy) bar.style.width = 0; }, 500);
 }
 
@@ -768,11 +768,11 @@ function renderRow(r) {
   else { drawMask(C("c10"), maskPolygons(S.ctx.geo, S.offsets), S.extras, true); drawExposure(C("c11"), S.opc, css("--after")); drawDeveloped(C("c12"), S.opc, css("--after")); }
 }
 
-const METRICS = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 4, true], ["epe_mean", "EPE mean", "nm", 3],
-  ["epe_max", "EPE max", "nm", 3], ["cd_err_mean", "CD error mean", "nm", 3], ["cd_err_max", "CD error max", "nm", 3],
-  ["line_end_mean", "Line-end shortening", "nm", 3], ["corner", "Corner error", "nm", 2],
+const METRICS = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 2, true], ["epe_mean", "EPE mean", "nm", 2],
+  ["epe_max", "EPE max", "nm", 2], ["cd_err_mean", "CD error mean", "nm", 2], ["cd_err_max", "CD error max", "nm", 2],
+  ["line_end_mean", "Line-end shortening", "nm", 2], ["corner", "Corner error", "nm", 2],
   ["bridges", "Bridges", "", 0], ["opens", "Opens", "", 0], ["missing", "Missing shapes", "", 0], ["spurious", "Extra shapes", "", 0]];
-const TILES = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 3], ["epe_mean", "EPE", "nm", 2], ["cd_err_max", "CD error", "nm", 2]];
+const TILES = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 2], ["epe_mean", "EPE", "nm", 2], ["cd_err_max", "CD error", "nm", 2]];
 function fmt(v, d) { return Number.isFinite(v) ? v.toFixed(d) : "—"; }
 function renderMetrics() {
   const tb = document.querySelector("#mtable tbody"); tb.textContent = "";
@@ -781,7 +781,7 @@ function renderMetrics() {
     let change = "—", cls = "";
     if (Number.isFinite(a) && Number.isFinite(b)) {
       if (d === 0) { change = b === a ? "—" : (b - a > 0 ? "+" : "") + (b - a); cls = b === a ? "" : (b < a ? "better" : "worse"); }
-      else if (Math.abs(a) > 1e-12) { const r = 100 * (b - a) / Math.abs(a); change = (r > 0 ? "+" : "") + r.toFixed(1) + " %";
+      else if (Math.abs(a) > 1e-12) { const r = 100 * (b - a) / Math.abs(a); change = (r > 0 ? "+" : "") + r.toFixed(2) + " %";
         cls = Math.abs(r) < 0.05 ? "" : ((higher ? r > 0 : r < 0) ? "better" : "worse"); }
     }
     for (const [txt, c] of [[label + (unit ? ` (${unit})` : ""), ""], [fmt(a, d), ""], [fmt(b, d), ""], [change, cls]]) {
@@ -929,7 +929,7 @@ function pngBlob() {
   const g = out.getContext("2d"); g.fillStyle = css("--panel"); g.fillRect(0, 0, out.width, out.height);
   g.fillStyle = css("--ink"); g.font = `600 22px ${css("--font-ui")}`; g.fillText(`Metal1 OPC Bench — ${S.cell}`, pad, 34);
   g.font = `14px ${css("--font-mono")}`; g.fillStyle = css("--ink-2");
-  g.fillText(`psf ${S.psf}${S.psf === "gaussian" ? " σ " + S.sigma.toFixed(3) + " nm" : ""} · threshold ${S.thr} · dose ${S.dose} · mismatch ${S.orig.metrics.mismatch_pct.toFixed(2)} → ${S.opc.metrics.mismatch_pct.toFixed(2)} % · IoU ${S.orig.metrics.iou.toFixed(3)} → ${S.opc.metrics.iou.toFixed(3)}`, pad, 54);
+  g.fillText(`psf ${S.psf}${S.psf === "gaussian" ? " σ " + S.sigma.toFixed(2) + " nm" : ""} · threshold ${S.thr} · dose ${S.dose} · mismatch ${S.orig.metrics.mismatch_pct.toFixed(2)} → ${S.opc.metrics.mismatch_pct.toFixed(2)} % · IoU ${S.orig.metrics.iou.toFixed(2)} → ${S.opc.metrics.iou.toFixed(2)}`, pad, 54);
   ids.forEach((c, k) => { const r = Math.floor(k / 3), q = k % 3; g.drawImage(c, pad + 40 + q * (colW + pad), top + pad + r * (rowH + pad)); });
   g.save(); g.font = `600 15px ${css("--font-ui")}`; g.fillStyle = css("--ink-2");
   ["original mask", "OPC mask"].forEach((t, r) => { g.save(); g.translate(pad + 14, top + pad + r * (rowH + pad) + rowH / 2); g.rotate(-Math.PI / 2); g.textAlign = "center"; g.fillText(t, 0, 0); g.restore(); });
