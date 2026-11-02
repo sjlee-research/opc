@@ -666,7 +666,7 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(x => x + x).join(""); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
 
 function viewOf() {
-  const c = S.ctx.c; let x0 = -8, y0 = -8, x1 = c.w + 8, y1 = c.h + 8;
+  const c = S.ctx.c; let x0 = -8, y0 = -8, x1 = c.w + 8, y1 = c.h + 16;          // room for the scale bar below
   for (const r of S.extras) { x0 = Math.min(x0, r.x0 - 4); y0 = Math.min(y0, r.y0 - 4); x1 = Math.max(x1, r.x1 + 4); y1 = Math.max(y1, r.y1 + 4); }
   return { x0, y0, w: x1 - x0, h: y1 - y0 };
 }
@@ -688,9 +688,9 @@ function dashedTarget(ctx, s) {
   ctx.beginPath(); for (const p of S.ctx.geo.polys) pathPoly(ctx, p); ctx.stroke(); ctx.restore();
 }
 function scaleBar(ctx, view, s) {
-  const L = 10, x = view.x0 + view.w - 4 - L, y = view.y0 + view.h - 4;
+  const L = 10, x = view.x0 + view.w - 4 - L, y = view.y0 + view.h - 6;
   ctx.save(); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2 / s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + L, y); ctx.stroke();
-  ctx.fillStyle = css("--ink-2"); ctx.font = `${10 / s}px ${css("--font-mono")}`; ctx.textAlign = "right"; ctx.fillText("10 nm", x + L, y - 3 / s); ctx.restore();
+  ctx.fillStyle = css("--ink-2"); ctx.font = `${10 / s}px ${css("--font-mono")}`; ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText("10 nm", x - 3 / s, y); ctx.restore();
 }
 
 function imageLayer(ctx, G, fill) {
@@ -891,7 +891,7 @@ function loadCell(name) {
 
 function setTool(v) {
   S.tool = v; document.querySelectorAll("#toolSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
-  C("toolNote").textContent = { select: "Click an edge on the OPC mask. Arrow keys nudge it.",
+  C("toolNote").textContent = { select: "Click an OPC mask edge. Arrow keys nudge it.",
     add: "Drag on the OPC mask to add a rectangle.", erase: "Drag on the OPC mask to cut a rectangle.",
     cells: "Click or drag on the original mask to draw the target." }[v];
   C("c10").classList.toggle("edit", v !== "cells"); C("c00").classList.toggle("edit", v === "cells"); renderAll();
