@@ -1,0 +1,23 @@
+cell,shadow,s_nm,mask,area_pct,iou,cd_horizontal_nm,cd_vertical_nm,defects
+INV_X1,none,0.0,original mask,18.121,0.8225,9.879,9.879,0
+INV_X1,none,0.0,OPC ignoring shadow,3.275,0.9675,10.522,10.502,0
+INV_X1,"High-NA, 60 nm absorber",0.788,original mask,25.532,0.7483,7.474,9.879,0
+INV_X1,"High-NA, 60 nm absorber",0.788,OPC ignoring shadow,17.244,0.8276,8.309,10.472,0
+INV_X1,"High-NA, 60 nm absorber",0.788,shadow-aware OPC,3.288,0.9673,10.517,10.497,0
+INV_X1,"High-NA, 80 nm absorber",1.051,original mask,28.516,0.7184,6.454,9.879,0
+INV_X1,"High-NA, 80 nm absorber",1.051,OPC ignoring shadow,23.437,0.7656,7.418,10.461,0
+INV_X1,"High-NA, 80 nm absorber",1.051,shadow-aware OPC,3.299,0.9672,10.518,10.496,0
+INV_X1,"NA 0.33, 60 nm absorber",1.577,original mask,36.321,0.6402,3.427,9.879,0
+INV_X1,"NA 0.33, 60 nm absorber",1.577,OPC ignoring shadow,41.584,0.5842,5.084,10.44,2
+INV_X1,"NA 0.33, 60 nm absorber",1.577,shadow-aware OPC,3.36,0.9666,10.517,10.494,0
+NAND2_X4,none,0.0,original mask,14.808,0.8556,10.094,9.879,0
+NAND2_X4,none,0.0,OPC ignoring shadow,2.62,0.974,10.577,10.495,0
+NAND2_X4,"High-NA, 60 nm absorber",0.788,original mask,21.975,0.784,7.725,9.874,0
+NAND2_X4,"High-NA, 60 nm absorber",0.788,OPC ignoring shadow,17.586,0.8241,8.176,10.314,0
+NAND2_X4,"High-NA, 60 nm absorber",0.788,shadow-aware OPC,2.726,0.9729,10.619,10.487,0
+NAND2_X4,"High-NA, 80 nm absorber",1.051,original mask,24.959,0.7541,6.734,9.872,0
+NAND2_X4,"High-NA, 80 nm absorber",1.051,OPC ignoring shadow,24.201,0.758,7.198,10.252,0
+NAND2_X4,"High-NA, 80 nm absorber",1.051,shadow-aware OPC,3.121,0.969,10.622,10.484,0
+NAND2_X4,"NA 0.33, 60 nm absorber",1.577,original mask,33.142,0.6723,3.896,9.867,0
+NAND2_X4,"NA 0.33, 60 nm absorber",1.577,OPC ignoring shadow,44.003,0.56,4.601,10.124,3
+NAND2_X4,"NA 0.33, 60 nm absorber",1.577,shadow-aware OPC,3.257,0.9676,10.628,10.486,0

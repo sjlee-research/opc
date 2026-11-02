@@ -11,7 +11,8 @@
         A2_conditions.png            dose and Gaussian-width variation
         A3_model_compare.png         intensity superposition vs Hopkins interference model
         A4_sraf_focus.png            assist features through focus (Hopkins)
-    tables/T1..T6 *.csv              conditions, geometry, metrics, CD per gauge, model comparison, conditions
+    tables/T1..T7 *.csv              conditions, geometry, metrics, CD per gauge, model comparison, conditions,
+                                     reflective-mask shadowing
     gds/targets.gds, gds/opc_result.gds (+ layers.lyp)
     conditions.yaml                  configuration + derived values (Gaussian sigma, threshold, grid per cell)
     metrics.json                     every number quoted in the paper
@@ -42,6 +43,9 @@ DOSES = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]
 DEFOCUS = [-30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0]
 FIG4_TABLE = [[0, 0.5, 1.0, 0.5, 0], [0.5, 4.0, 5.0, 4.0, 0.5], [1.0, 5.0, 10.0, 5.0, 1.0],
               [0.5, 4.0, 5.0, 4.0, 0.5], [0, 0.5, 1.0, 0.5, 0]]      # weight-table PSF of the assignment sheet
+CRA_DEG = 6.0                                                        # EUV chief-ray angle at the mask, tilted toward y
+SHADOWS = [("High-NA, 60 nm absorber", 60.0, 8), ("High-NA, 80 nm absorber", 80.0, 8),   # (label, absorber nm,
+           ("NA 0.33, 60 nm absorber", 60.0, 4)]                                         #  demagnification in y)
 
 
 def _scalar(d: dict) -> dict:
@@ -63,6 +67,23 @@ def _line_end_pullback(case, exposure: np.ndarray, threshold: float) -> np.ndarr
     disp, _ = edge_displacement(ImageSampler(exposure, case.grid), threshold, case.frag.sites[le],
                                 case.frag.normal[le])
     return -disp
+
+
+def _shadow(polys, s: float) -> list:
+    """Reflecting area of an EUV mask seen past the absorber walls: light arrives and leaves tilted in the y-z plane,
+    so every x-parallel edge loses a strip of width s (geometric shadowing, wafer scale)."""
+    P = gdstk.boolean([gdstk.Polygon(p) for p in polys], [], "or")
+    up = [q.copy().translate(0, s) for q in P]
+    dn = [q.copy().translate(0, -s) for q in P]
+    return [np.array(q.points) for q in gdstk.boolean(gdstk.boolean(P, up, "and"), dn, "and")]
+
+
+def _hv_cd(f: dict, gauges) -> tuple[float, float]:
+    """Mean printed width of x-running (measured along y) and y-running lines."""
+    w = dict(f["cd"])
+    h = [w[g.name] for g in gauges if abs(g.direction[1]) > 0.5]
+    v = [w[g.name] for g in gauges if abs(g.direction[0]) > 0.5]
+    return float(np.mean(h)), float(np.mean(v))
 
 
 def _standard(cfg: Config):
@@ -291,6 +312,28 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
         if name == "NAND2_X4":
             view = {"name": name, "target": c.target, "mask": mb_hs.mask[:len(mb_hs.mask) - len(sr)], "srafs": sr}
     viz.fig_sraf_focus(curves_f, view, path=app_dir / "A4_sraf_focus.png")
+
+    # ---- reflective EUV mask: absorber shadowing (thin-mask model + geometric shadow) -------------------
+    sh_rows, M["shadow"] = [], {"chief_ray_angle_deg": CRA_DEG, "cells": {}}
+    for name, r in results.items():
+        c, g = r["case"], gauges[name]
+        M["shadow"]["cells"][name] = []
+        for label, t, mag in [("none", 0.0, 1)] + SHADOWS:
+            s = t * np.tan(np.radians(CRA_DEG)) / mag
+            masks = {"original mask": c.target, "OPC ignoring shadow": r["mb"].mask}
+            if s:
+                masks["shadow-aware OPC"] = run_mbopc(sim, cfg, c.frag, c.grid, opts=_standard(cfg),
+                                                      effective=lambda m, s=s: _shadow(m, s)).mask
+            for tag, mask in masks.items():
+                f = (fidelity_metrics(sim, cfg, c.target, c.grid, _shadow(mask, s), g, details=True) if s
+                     else r["fb" if tag == "original mask" else "fa"])
+                cd_h, cd_v = _hv_cd(f, g)
+                row = {"cell": name, "shadow": label, "s_nm": round(s, 3), "mask": tag,
+                       "area_pct": round(f["area_pct"], 3), "iou": round(f["iou"], 4), "cd_horizontal_nm": round(cd_h, 3),
+                       "cd_vertical_nm": round(cd_v, 3), "defects": f["bridges"] + f["opens"] + f["missing"]}
+                sh_rows.append(row)
+                M["shadow"]["cells"][name].append(row)
+    write_csv(tab_dir / "T7_mask_shadow.csv", sh_rows)
 
     # ---- GDS --------------------------------------------------------------------------------------------
     write_gds_grid(gds_dir / "targets.gds", [("", [(p.name, {LAYER_TARGET: p.polygons}) for p in cells])],

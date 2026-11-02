@@ -619,9 +619,10 @@ def _mrc_guard(frag: Fragmentation, cfg: Config, d_new: np.ndarray, d_old: np.nd
 
 def run_mbopc(sim: LithoSimulator, cfg: Config, frag: Fragmentation, grid: Grid,
               init_offsets: np.ndarray | None = None, opts: MBOPCConfig | None = None,
-              fixed: list[Polygon] | None = None, keep_masks: bool = False) -> MBResult:
+              fixed: list[Polygon] | None = None, keep_masks: bool = False, effective=None) -> MBResult:
     """fixed: polygons added to every mask but never moved (e.g. assist features);
-    keep_masks: store the mask of every iteration in MBResult.masks."""
+    keep_masks: store the mask of every iteration in MBResult.masks;
+    effective: maps the drawn mask to the mask the optics sees (e.g. EUV absorber shadowing); MRC checks the drawn mask."""
     o = opts or cfg.mbopc
     t0 = time.time()
     lo, hi = frag.bounds(cfg.mrc, o.max_in_nm, o.max_out_nm)
@@ -639,7 +640,7 @@ def run_mbopc(sim: LithoSimulator, cfg: Config, frag: Fragmentation, grid: Grid,
         mask = frag.mask_polygons(d) + list(fixed or [])
         if keep_masks:
             res.masks.append(mask)
-        imgs = ProcessImages(sim, rasterize(mask, grid), grid, focus)
+        imgs = ProcessImages(sim, rasterize(effective(mask) if effective else mask, grid), grid, focus)
         epes = [imgs.site_epe(frag.sites, frag.normal, f, dose) for f, dose in conds]
         nominal = epes[0]
         eff = nominal if len(epes) == 1 else o.pw_nominal_weight * nominal + (1 - o.pw_nominal_weight) * np.mean(epes[1:], axis=0)

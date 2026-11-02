@@ -95,7 +95,7 @@
    "segments": 108,
    "mask_vertices": 192,
    "mrc_violations": 0,
-   "runtime_s": 1.29,
+   "runtime_s": 1.37,
    "progress": {
     "mismatch_pct": [
      18.121,
@@ -246,7 +246,7 @@
    "segments": 316,
    "mask_vertices": 576,
    "mrc_violations": 0,
-   "runtime_s": 2.09,
+   "runtime_s": 2.1,
    "progress": {
     "mismatch_pct": [
      14.808,
@@ -1608,5 +1608,256 @@
    }
   }
  },
- "runtime_s": 51.4
+ "shadow": {
+  "chief_ray_angle_deg": 6.0,
+  "cells": {
+   "INV_X1": [
+    {
+     "cell": "INV_X1",
+     "shadow": "none",
+     "s_nm": 0.0,
+     "mask": "original mask",
+     "area_pct": 18.121,
+     "iou": 0.8225,
+     "cd_horizontal_nm": 9.879,
+     "cd_vertical_nm": 9.879,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "none",
+     "s_nm": 0.0,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 3.275,
+     "iou": 0.9675,
+     "cd_horizontal_nm": 10.522,
+     "cd_vertical_nm": 10.502,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "original mask",
+     "area_pct": 25.532,
+     "iou": 0.7483,
+     "cd_horizontal_nm": 7.474,
+     "cd_vertical_nm": 9.879,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 17.244,
+     "iou": 0.8276,
+     "cd_horizontal_nm": 8.309,
+     "cd_vertical_nm": 10.472,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "shadow-aware OPC",
+     "area_pct": 3.288,
+     "iou": 0.9673,
+     "cd_horizontal_nm": 10.517,
+     "cd_vertical_nm": 10.497,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "original mask",
+     "area_pct": 28.516,
+     "iou": 0.7184,
+     "cd_horizontal_nm": 6.454,
+     "cd_vertical_nm": 9.879,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 23.437,
+     "iou": 0.7656,
+     "cd_horizontal_nm": 7.418,
+     "cd_vertical_nm": 10.461,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "shadow-aware OPC",
+     "area_pct": 3.299,
+     "iou": 0.9672,
+     "cd_horizontal_nm": 10.518,
+     "cd_vertical_nm": 10.496,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "original mask",
+     "area_pct": 36.321,
+     "iou": 0.6402,
+     "cd_horizontal_nm": 3.427,
+     "cd_vertical_nm": 9.879,
+     "defects": 0
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 41.584,
+     "iou": 0.5842,
+     "cd_horizontal_nm": 5.084,
+     "cd_vertical_nm": 10.44,
+     "defects": 2
+    },
+    {
+     "cell": "INV_X1",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "shadow-aware OPC",
+     "area_pct": 3.36,
+     "iou": 0.9666,
+     "cd_horizontal_nm": 10.517,
+     "cd_vertical_nm": 10.494,
+     "defects": 0
+    }
+   ],
+   "NAND2_X4": [
+    {
+     "cell": "NAND2_X4",
+     "shadow": "none",
+     "s_nm": 0.0,
+     "mask": "original mask",
+     "area_pct": 14.808,
+     "iou": 0.8556,
+     "cd_horizontal_nm": 10.094,
+     "cd_vertical_nm": 9.879,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "none",
+     "s_nm": 0.0,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 2.62,
+     "iou": 0.974,
+     "cd_horizontal_nm": 10.577,
+     "cd_vertical_nm": 10.495,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "original mask",
+     "area_pct": 21.975,
+     "iou": 0.784,
+     "cd_horizontal_nm": 7.725,
+     "cd_vertical_nm": 9.874,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 17.586,
+     "iou": 0.8241,
+     "cd_horizontal_nm": 8.176,
+     "cd_vertical_nm": 10.314,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 60 nm absorber",
+     "s_nm": 0.788,
+     "mask": "shadow-aware OPC",
+     "area_pct": 2.726,
+     "iou": 0.9729,
+     "cd_horizontal_nm": 10.619,
+     "cd_vertical_nm": 10.487,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "original mask",
+     "area_pct": 24.959,
+     "iou": 0.7541,
+     "cd_horizontal_nm": 6.734,
+     "cd_vertical_nm": 9.872,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 24.201,
+     "iou": 0.758,
+     "cd_horizontal_nm": 7.198,
+     "cd_vertical_nm": 10.252,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "High-NA, 80 nm absorber",
+     "s_nm": 1.051,
+     "mask": "shadow-aware OPC",
+     "area_pct": 3.121,
+     "iou": 0.969,
+     "cd_horizontal_nm": 10.622,
+     "cd_vertical_nm": 10.484,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "original mask",
+     "area_pct": 33.142,
+     "iou": 0.6723,
+     "cd_horizontal_nm": 3.896,
+     "cd_vertical_nm": 9.867,
+     "defects": 0
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "OPC ignoring shadow",
+     "area_pct": 44.003,
+     "iou": 0.56,
+     "cd_horizontal_nm": 4.601,
+     "cd_vertical_nm": 10.124,
+     "defects": 3
+    },
+    {
+     "cell": "NAND2_X4",
+     "shadow": "NA 0.33, 60 nm absorber",
+     "s_nm": 1.577,
+     "mask": "shadow-aware OPC",
+     "area_pct": 3.257,
+     "iou": 0.9676,
+     "cd_horizontal_nm": 10.628,
+     "cd_vertical_nm": 10.486,
+     "defects": 0
+    }
+   ]
+  }
+ },
+ "runtime_s": 60.8
 }
