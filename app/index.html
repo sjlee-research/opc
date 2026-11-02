@@ -1,191 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Metal1 OPC Bench</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <style>
-/* Layout: a narrow control rail, a 2 x 3 bench (original / OPC mask x mask / exposure / developed), metrics below. */
+/* Layout: translucent toolbar; results (summary, 2 x 3 bench, metrics, convergence) on the left; inspector on the right. */
 :root {
-  --bg: #f4f6f8; --panel: #ffffff; --ink: #151a21; --ink-2: #4b5462; --muted: #8790a0; --line: #dde2e8;
-  --accent: #2a6fd0; --accent-ink: #ffffff; --mask: #5a47c6; --before: #e2622c; --after: #2a6fd0;
-  --miss: #d23b3b; --target: #262c35; --good: #1c7a46; --chip: #eef1f5;
-  --heat0: #ffffff; --heat1: #b9d3f5; --heat2: #2f6fc4; --heat3: #0b2e63;
-  --font-ui: "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bg: #f5f5f7; --panel: #ffffff; --ink: #1d1d1f; --ink-2: #6e6e73; --muted: #86868b; --line: #e5e5ea;
+  --fill: #e9e9ee; --seg-on: #ffffff; --bar: rgba(245, 245, 247, 0.78); --menu: rgba(250, 250, 252, 0.92);
+  --accent: #0071e3; --accent-ink: #ffffff; --mask: #af52de; --before: #ff9500; --after: #007aff;
+  --miss: #ff3b30; --target: #1d1d1f; --good: #248a3d; --bad: #d70015;
+  --heat0: #ffffff; --heat1: #cfe1fb; --heat2: #3b82f0; --heat3: #0b2a5e;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f1216; --panel: #171b21; --ink: #e8ecf1; --ink-2: #b3bcc8; --muted: #7d8794; --line: #2a3038;
-  --accent: #5b9bef; --accent-ink: #0b1220; --mask: #a597ff; --before: #f08a58; --after: #6aa8f5;
-  --miss: #ff6b6b; --target: #dfe5ec; --good: #4cc483; --chip: #20262e;
-  --heat0: #171b21; --heat1: #1d3b66; --heat2: #3f7fd6; --heat3: #d6e6ff; color-scheme: dark; } }
+  --bg: #000000; --panel: #1c1c1e; --ink: #f5f5f7; --ink-2: #a1a1a6; --muted: #8e8e93; --line: #38383a;
+  --fill: #2c2c2e; --seg-on: #636366; --bar: rgba(22, 22, 23, 0.78); --menu: rgba(44, 44, 46, 0.92);
+  --accent: #0a84ff; --accent-ink: #ffffff; --mask: #bf5af2; --before: #ff9f0a; --after: #0a84ff;
+  --miss: #ff453a; --target: #f5f5f7; --good: #30d158; --bad: #ff6961;
+  --heat0: #1c1c1e; --heat1: #1a3a6b; --heat2: #3b82f0; --heat3: #d8e7ff; --shadow: none; color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #0f1216; --panel: #171b21; --ink: #e8ecf1; --ink-2: #b3bcc8; --muted: #7d8794; --line: #2a3038;
-  --accent: #5b9bef; --accent-ink: #0b1220; --mask: #a597ff; --before: #f08a58; --after: #6aa8f5;
-  --miss: #ff6b6b; --target: #dfe5ec; --good: #4cc483; --chip: #20262e;
-  --heat0: #171b21; --heat1: #1d3b66; --heat2: #3f7fd6; --heat3: #d6e6ff; color-scheme: dark; }
+  --bg: #000000; --panel: #1c1c1e; --ink: #f5f5f7; --ink-2: #a1a1a6; --muted: #8e8e93; --line: #38383a;
+  --fill: #2c2c2e; --seg-on: #636366; --bar: rgba(22, 22, 23, 0.78); --menu: rgba(44, 44, 46, 0.92);
+  --accent: #0a84ff; --accent-ink: #ffffff; --mask: #bf5af2; --before: #ff9f0a; --after: #0a84ff;
+  --miss: #ff453a; --target: #f5f5f7; --good: #30d158; --bad: #ff6961;
+  --heat0: #1c1c1e; --heat1: #1a3a6b; --heat2: #3b82f0; --heat3: #d8e7ff; --shadow: none; color-scheme: dark; }
 [hidden] { display: none !important; }
-html, body { height: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.5;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 16px 32px; }
-h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-.sub { color: var(--ink-2); margin: 2px 0 0; font-size: 13px; }
-header { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
-.formula { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
-.app { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (max-width: 900px) { .app { grid-template-columns: minmax(0, 1fr); } }
-.rail { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line);
-  border-radius: 10px; padding: 14px; }
-.group { display: flex; flex-direction: column; gap: 8px; }
-.group + .group { border-top: 1px solid var(--line); padding-top: 12px; }
-.label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--chip); border-radius: 8px; padding: 3px; gap: 3px; }
-.seg button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 12.5px; padding: 6px 4px;
-  border-radius: 6px; cursor: pointer; }
-.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
-.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; }
-.row output { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
-input[type=range] { width: 100%; accent-color: var(--accent); grid-column: 1 / -1; }
-.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 10px;
-  border-radius: 8px; cursor: pointer; }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.btn:disabled { opacity: 0.5; cursor: default; }
-.btns { display: flex; flex-wrap: wrap; gap: 6px; }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.note { font-size: 12px; color: var(--ink-2); }
-.progress { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); min-height: 1.5em; font-variant-numeric: tabular-nums; }
-.edit-box { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
-.edit-box output { text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.bench-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
-.bench { display: grid; grid-template-columns: auto repeat(3, minmax(150px, 1fr)); gap: 10px 12px; min-width: 560px; align-items: start; }
-.rowhead { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; color: var(--ink-2);
-  text-align: center; align-self: center; letter-spacing: 0.02em; }
-.panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.ptitle { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; }
-.ptitle b { font-weight: 600; margin-right: 2px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-size: 11.5px; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.43 var(--font-ui); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, label:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; }
+
+/* toolbar */
+.toolbar { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px 16px;
+  padding: 10px max(20px, env(safe-area-inset-right, 0px)) 10px max(20px, env(safe-area-inset-left, 0px));
+  background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--line); }
+.toolbar h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; white-space: nowrap; }
+.actions { justify-self: end; display: flex; gap: 6px; align-items: center; }
+.bar { position: absolute; left: 0; bottom: -1px; height: 2px; width: 0; background: var(--accent); opacity: 0; transition: width 0.15s linear, opacity 0.5s; }
+@media (max-width: 720px) { .toolbar { grid-template-columns: 1fr auto; } .toolbar > .seg { grid-column: 1 / -1; grid-row: 2; } }
+
+/* controls */
+.seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--fill); border-radius: 9px; padding: 2px; gap: 2px; }
+.seg.full { display: grid; }
+.seg button { border: 0; background: transparent; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  transition: background 0.2s, box-shadow 0.2s; }
+.seg button[aria-pressed="true"] { background: var(--seg-on); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04); font-weight: 600; }
+.seg button:disabled { opacity: 0.35; cursor: default; }
+.btn { border: 0; border-radius: 980px; padding: 7px 16px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--fill); display: inline-flex; align-items: center; gap: 7px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.primary.busy:disabled { opacity: 1; filter: none; }
+.spin { display: none; width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: spin 0.8s linear infinite; }
+.busy .spin { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.icon-btn { width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--accent); display: grid; place-items: center; cursor: pointer; }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--fill); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; background: transparent; cursor: pointer; --p: 50%; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px;
+  background: linear-gradient(var(--accent), var(--accent)) 0 / var(--p) 100% no-repeat, var(--fill); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: 50%; background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.06); box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.12), 0 6px 13px rgba(0, 0, 0, 0.12); }
+input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--fill); }
+input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.12), 0 6px 13px rgba(0, 0, 0, 0.12); }
+
+/* page */
+.page { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start;
+  padding: 20px max(20px, env(safe-area-inset-right, 0px)) 40px max(20px, env(safe-area-inset-left, 0px)); }
+@media (max-width: 960px) { .page { grid-template-columns: minmax(0, 1fr); } }
+main { display: grid; gap: 20px; min-width: 0; }
+.card { background: var(--panel); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; min-width: 0; }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; min-height: 32px; }
+.card-h h2 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.aux { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* summary */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 18px 0; }
+.stat { padding: 0 20px; min-width: 0; }
+.stat + .stat { border-left: 1px solid var(--line); }
+.stat .k { font-size: 13px; color: var(--ink-2); }
+.stat .v { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; }
+.stat .v small { font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; }
+.stat .was { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; } .stat:nth-child(3) { border-left: 0; } .stat .v { font-size: 26px; } }
+
+/* bench */
+.bench { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; align-items: start; }
+@media (max-width: 640px) { .card { padding: 16px; border-radius: 16px; } .stats { padding: 16px 0; } .stat { padding: 0 16px; } .bench { column-gap: 8px; } }
+.colhead { font-size: 13px; font-weight: 600; text-align: center; }
+.rowhead { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.panel { display: flex; justify-content: center; min-width: 0; }
+canvas.view { width: 100%; display: block; border-radius: 10px; background: var(--panel); box-shadow: 0 0 0 1px var(--line); touch-action: none; }
+canvas.edit { cursor: crosshair; }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 16px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { width: 14px; height: 9px; border-radius: 2px; display: inline-block; }
 .sw.line { height: 0; border-top: 2px solid currentColor; border-radius: 0; }
 .sw.dash { height: 0; border-top: 1.5px dashed var(--target); border-radius: 0; }
-canvas.view { width: 100%; display: block; border-radius: 6px; background: var(--panel); outline: 1px solid var(--line); touch-action: none; }
-canvas.edit { cursor: crosshair; }
-.metrics { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; }
+
+/* metrics + convergence */
+.duo { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .duo { grid-template-columns: minmax(0, 1fr); } }
+.table-wrap { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
-thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-td.better { color: var(--good); font-weight: 600; }
-td.worse { color: var(--miss); font-weight: 600; }
-.foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-@media (max-width: 700px) { .foot { grid-template-columns: minmax(0, 1fr); } }
-.spark { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.spark canvas { width: 100%; height: 120px; display: block; }
-.defs { font-size: 12px; color: var(--ink-2); display: grid; gap: 4px; }
-.defs code { font-family: var(--font-mono); font-size: 11.5px; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 30; }
-.dialog { position: fixed; inset: 0; background: rgba(10, 14, 20, 0.45); display: grid; place-items: center; z-index: 40; padding: 16px; }
-.dialog .card { background: var(--panel); color: var(--ink); border-radius: 10px; padding: 14px; width: min(640px, 100%); display: grid; gap: 10px; }
-.dialog textarea { width: 100%; height: 260px; font-family: var(--font-mono); font-size: 11.5px; background: var(--bg); color: var(--ink);
-  border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+th, td { text-align: right; padding: 7px 0 7px 14px; border-top: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+thead th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 500; color: var(--muted); }
+td.better { color: var(--good); }
+td.worse { color: var(--bad); }
+#spark { width: 100%; height: 190px; display: block; }
+
+/* menus */
+.menu-wrap { position: relative; }
+.menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; min-width: 170px; display: grid; padding: 5px;
+  background: var(--menu); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.12); }
+.menu button { border: 0; background: none; text-align: left; font-size: 14px; padding: 6px 10px; border-radius: 7px; cursor: pointer; }
+.menu button:hover { background: var(--accent); color: var(--accent-ink); }
+.menu hr { border: 0; height: 1px; background: var(--line); margin: 5px 8px; }
+.menu .mh { font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 10px 2px; }
+.pop { width: min(340px, calc(100vw - 48px)); padding: 14px 16px; font-size: 12.5px; color: var(--ink-2); }
+.pop dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
+.pop dt { color: var(--ink); font-weight: 600; }
+.pop dd { margin: 0; }
+.pop p { margin: 10px 0 0; }
+
+/* inspector */
+.inspector { display: grid; gap: 22px; }
+@media (min-width: 961px) { .inspector { position: sticky; top: 72px; max-height: calc(100vh - 92px); overflow-y: auto; padding: 0 2px 4px; } }
+.inspector h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 0 0 7px 4px; }
+.group { background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); }
+.group > * { position: relative; }
+.group > * + *::before { content: ""; position: absolute; left: 14px; right: 0; top: 0; height: 1px; background: var(--line); }
+.item { padding: 10px 14px; display: grid; gap: 6px; }
+.item .top { display: flex; justify-content: space-between; align-items: baseline; }
+.item output { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.item.row { grid-template-columns: 1fr auto; align-items: center; }
+.action { display: block; width: 100%; border: 0; background: none; color: var(--accent); text-align: left; padding: 11px 14px; cursor: pointer; }
+.action:disabled { color: var(--muted); cursor: default; }
+.stepper { display: inline-flex; background: var(--fill); border-radius: 8px; }
+.stepper button { width: 40px; height: 28px; border: 0; background: none; font-size: 17px; cursor: pointer; }
+.stepper button + button { box-shadow: inset 1px 0 0 var(--line); }
+.stepper button:disabled { opacity: 0.35; cursor: default; }
+#segOut { font-variant-numeric: tabular-nums; }
+.hint { font-size: 12px; color: var(--muted); margin: 7px 4px 0; }
+
+/* transient */
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50;
+  background: rgba(30, 30, 32, 0.88); color: #fff; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  padding: 10px 18px; border-radius: 14px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2); }
+.dialog { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, 0.32); }
+.dialog .card { width: min(640px, 100%); display: grid; gap: 14px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.dialog h2 { font-size: 17px; margin: 0; }
+.dialog textarea { width: 100%; height: 280px; box-sizing: border-box; resize: vertical; border: 0; border-radius: 10px; padding: 10px;
+  background: var(--bg); color: var(--ink); font: 11.5px/1.5 var(--font-mono); }
+.dialog .btns { display: flex; justify-content: flex-end; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
+</head>
+<body>
 
-<header>
-  <div>
-    <h1>Metal1 OPC Bench</h1>
-    <p class="sub">INV_X1 · NAND2_X4 Metal1 (λ = 3.5 nm, line 10.5 nm) — 광량 합산 모델과 model-based OPC</p>
+<header class="toolbar">
+  <h1>Metal1 OPC Bench</h1>
+  <div class="seg" id="cellSeg" role="group" aria-label="Cell">
+    <button type="button" data-v="INV_X1" aria-pressed="true">INV_X1</button>
+    <button type="button" data-v="NAND2_X4" aria-pressed="false">NAND2_X4</button>
+    <button type="button" data-v="Custom" aria-pressed="false">Custom</button>
   </div>
-  <div class="formula">E(x) = Σ mask(x′)·PSF(x − x′) · printed where dose·E ≥ threshold</div>
+  <div class="actions">
+    <div class="menu-wrap">
+      <button type="button" class="icon-btn" id="shareBtn" aria-label="Export" aria-haspopup="menu" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>
+      </button>
+      <div class="menu" id="shareMenu" role="menu" hidden>
+        <div class="mh">Save as</div>
+        <button type="button" role="menuitem" id="exJson">JSON</button>
+        <button type="button" role="menuitem" id="exCsv">CSV</button>
+        <button type="button" role="menuitem" id="exPng">PNG</button>
+        <hr>
+        <button type="button" role="menuitem" id="exCopy">Copy JSON</button>
+        <button type="button" role="menuitem" id="exOpen">Open…</button>
+      </div>
+    </div>
+    <button type="button" class="btn primary" id="runOpc"><span class="spin" aria-hidden="true"></span><span id="runLabel">Run OPC</span></button>
+  </div>
+  <div class="bar" id="bar"></div>
 </header>
+<input id="imJson" type="file" accept=".json,application/json" hidden>
 
-<div class="app">
-  <aside class="rail" aria-label="Controls">
-    <div class="group">
-      <span class="label">Cell</span>
-      <div class="seg" id="cellSeg">
-        <button type="button" data-v="INV_X1" aria-pressed="true">INV_X1</button>
-        <button type="button" data-v="NAND2_X4" aria-pressed="false">NAND2_X4</button>
-        <button type="button" data-v="Custom" aria-pressed="false">Custom</button>
-      </div>
-    </div>
-    <div class="group">
-      <span class="label">Light distribution</span>
-      <div class="seg" id="psfSeg">
-        <button type="button" data-v="gaussian" aria-pressed="true">Gaussian</button>
-        <button type="button" data-v="table" aria-pressed="false">Table (Fig. 4)</button>
-      </div>
-      <div class="row" id="sigmaRow"><label for="sigma">σ (cut-off 4σ)</label><output id="sigmaOut"></output>
-        <input id="sigma" type="range" min="3" max="8" step="0.05" value="5.155"></div>
-      <div class="row"><label for="thr">Threshold</label><output id="thrOut"></output>
-        <input id="thr" type="range" min="0.3" max="0.7" step="0.01" value="0.5"></div>
-      <div class="row"><label for="dose">Dose</label><output id="doseOut"></output>
-        <input id="dose" type="range" min="0.85" max="1.15" step="0.01" value="1"></div>
-      <p class="note">Before/after comparison: keep dose 1.00. Positive resist — dose·E ≥ threshold is developed away (trench → Metal1).</p>
-    </div>
-    <div class="group">
-      <span class="label">Model-based OPC</span>
-      <div class="row"><label for="iters">Iterations</label><output id="itersOut"></output>
-        <input id="iters" type="range" min="1" max="60" step="1" value="30"></div>
-      <div class="row"><label for="damp">Damping</label><output id="dampOut"></output>
-        <input id="damp" type="range" min="0.1" max="1" step="0.05" value="0.5"></div>
-      <div class="btns"><button type="button" class="btn primary" id="runOpc">Run OPC</button>
-        <button type="button" class="btn" id="resetMask">Reset mask</button></div>
-      <div class="progress" id="progress" aria-live="polite"></div>
-    </div>
-    <div class="group">
-      <span class="label">Edit OPC mask</span>
-      <div class="seg" id="toolSeg">
-        <button type="button" data-v="select" aria-pressed="true">Edge</button>
-        <button type="button" data-v="add" aria-pressed="false">Add</button>
-        <button type="button" data-v="erase" aria-pressed="false">Erase</button>
-        <button type="button" data-v="cells" aria-pressed="false" id="cellsTool">Target</button>
-      </div>
-      <div class="edit-box"><button type="button" class="btn" id="segMinus" aria-label="Move edge inward">−0.5</button>
-        <output id="segOut">no edge</output><button type="button" class="btn" id="segPlus" aria-label="Move edge outward">+0.5</button></div>
-      <p class="note" id="toolNote">Click an edge in the OPC mask, then move it with the buttons or arrow keys.</p>
-    </div>
-    <div class="group">
-      <span class="label">Export</span>
-      <div class="btns"><button type="button" class="btn" id="exJson">JSON</button><button type="button" class="btn" id="exCsv">CSV</button>
-        <button type="button" class="btn" id="exPng">PNG</button><button type="button" class="btn" id="exCopy">Copy</button></div>
-      <label class="btn" for="imJson" style="text-align:center">Load JSON…</label>
-      <input id="imJson" type="file" accept=".json,application/json" hidden>
-    </div>
-  </aside>
-
+<div class="page">
   <main>
-    <div class="bench-wrap">
+    <section class="card stats" id="stats" aria-label="Summary"></section>
+
+    <section class="card">
       <div class="bench" id="bench">
-        <div class="rowhead">Original mask</div>
-        <div class="panel"><div class="ptitle"><b>Mask</b><span class="chip"><span class="sw" style="background:var(--mask);opacity:.35"></span>mask</span><span class="chip"><span class="sw dash"></span>target</span></div><canvas class="view" id="c00"></canvas></div>
-        <div class="panel"><div class="ptitle"><b>Exposure</b><span class="chip" style="color:var(--before)"><span class="sw line"></span><span style="color:var(--ink-2)">threshold</span></span></div><canvas class="view" id="c01"></canvas></div>
-        <div class="panel"><div class="ptitle"><b>Developed</b><span class="chip"><span class="sw" style="background:var(--before);opacity:.45"></span>printed</span><span class="chip"><span class="sw" style="background:var(--miss)"></span>mismatch</span></div><canvas class="view" id="c02"></canvas></div>
-        <div class="rowhead">OPC mask</div>
-        <div class="panel"><div class="ptitle"><b>Mask</b><span class="chip"><span class="sw" style="background:var(--mask);opacity:.35"></span>mask</span><span class="chip"><span class="sw dash"></span>target</span></div><canvas class="view edit" id="c10"></canvas></div>
-        <div class="panel"><div class="ptitle"><b>Exposure</b><span class="chip" style="color:var(--after)"><span class="sw line"></span><span style="color:var(--ink-2)">threshold</span></span></div><canvas class="view" id="c11"></canvas></div>
-        <div class="panel"><div class="ptitle"><b>Developed</b><span class="chip"><span class="sw" style="background:var(--after);opacity:.45"></span>printed</span><span class="chip"><span class="sw" style="background:var(--miss)"></span>mismatch</span></div><canvas class="view" id="c12"></canvas></div>
+          <div class="colhead">Mask</div><div class="colhead">Exposure</div><div class="colhead">Developed</div>
+          <div class="rowhead"><span class="dot" style="background:var(--before)"></span>Original mask</div>
+          <div class="panel"><canvas class="view" id="c00" aria-label="Original mask"></canvas></div>
+          <div class="panel"><canvas class="view" id="c01" aria-label="Exposure of the original mask"></canvas></div>
+          <div class="panel"><canvas class="view" id="c02" aria-label="Developed pattern of the original mask"></canvas></div>
+          <div class="rowhead"><span class="dot" style="background:var(--after)"></span>OPC mask</div>
+          <div class="panel"><canvas class="view edit" id="c10" aria-label="OPC mask"></canvas></div>
+          <div class="panel"><canvas class="view" id="c11" aria-label="Exposure of the OPC mask"></canvas></div>
+          <div class="panel"><canvas class="view" id="c12" aria-label="Developed pattern of the OPC mask"></canvas></div>
       </div>
-    </div>
-    <div class="metrics"><table id="mtable"><thead><tr><th>Metric</th><th>Original mask</th><th>OPC mask</th><th>Change</th></tr></thead><tbody></tbody></table></div>
-    <div class="foot">
-      <div class="spark"><span class="label">OPC convergence — mismatch area per iteration</span><canvas id="spark"></canvas></div>
-      <div class="spark defs">
-        <span class="label">Definitions</span>
-        <span><code>mismatch</code> area where the developed pattern ≠ target, % of target area (sub-pixel)</span>
-        <span><code>IoU</code> |printed ∩ target| / |printed ∪ target|</span>
-        <span><code>EPE</code> printed-edge distance from the target edge, every 1 nm, outside 3.5 nm corner zones</span>
-        <span><code>CD</code> printed width at fixed cut lines (target 10.5 nm) · <code>line end</code> tip pull-back</span>
-        <span>Grid 0.5 nm (λ/7) · area = cell + 25 nm margin · Gaussian σ = 0.21·λ/NA (13.5 nm, NA 0.55)</span>
+      <div class="legend">
+        <span><i class="sw dash"></i>Target</span>
+        <span><i class="sw" style="background:var(--mask);opacity:.4"></i>Mask</span>
+        <span style="color:var(--before)"><i class="sw line"></i><span style="color:var(--ink-2)">Original</span></span>
+        <span style="color:var(--after)"><i class="sw line"></i><span style="color:var(--ink-2)">OPC</span></span>
+        <span><i class="sw" style="background:var(--miss)"></i>Mismatch</span>
       </div>
+    </section>
+
+    <div class="duo">
+      <section class="card">
+        <div class="card-h"><h2>Metrics</h2>
+          <div class="menu-wrap">
+            <button type="button" class="icon-btn" id="infoBtn" aria-label="Model and definitions" aria-expanded="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.7" fill="currentColor"/></svg>
+            </button>
+            <div class="menu pop" id="infoPop" hidden>
+              <dl>
+                <dt>Model</dt><dd>E(x) = Σ mask(x′)·PSF(x − x′). Positive resist: dose·E ≥ threshold prints.</dd>
+                <dt>PSF</dt><dd>Gaussian σ = 0.21·λ/NA (13.5 nm, NA 0.55), cut at 4σ. Table: λ-grid weights.</dd>
+                <dt>Grid</dt><dd>0.5 nm (λ/7), cell + 25 nm margin.</dd>
+                <dt>Mismatch</dt><dd>Printed ≠ target area, % of target area.</dd>
+                <dt>IoU</dt><dd>|printed ∩ target| / |printed ∪ target|.</dd>
+                <dt>EPE</dt><dd>Edge placement error every 1 nm, outside 3.5 nm corner zones.</dd>
+                <dt>CD</dt><dd>Printed width at fixed cut lines (target 10.5 nm).</dd>
+              </dl>
+              <p>Compare original and OPC masks at dose 1.00.</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap"><table id="mtable"><thead><tr><th></th><th>Original</th><th>OPC</th><th>Change</th></tr></thead><tbody></tbody></table></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><h2>Convergence</h2><span class="aux" id="status" aria-live="polite"></span></div>
+        <canvas id="spark" aria-label="Mismatch per OPC iteration"></canvas>
+      </section>
     </div>
   </main>
+
+  <aside class="inspector" aria-label="Controls">
+    <section>
+      <h2>Exposure</h2>
+      <div class="group">
+        <div class="item"><div class="seg full" id="psfSeg" role="group" aria-label="Light distribution">
+          <button type="button" data-v="gaussian" aria-pressed="true">Gaussian</button>
+          <button type="button" data-v="table" aria-pressed="false">Table</button></div></div>
+        <div class="item" id="sigmaRow"><div class="top"><label for="sigma">σ</label><output id="sigmaOut"></output></div>
+          <input id="sigma" type="range" min="3" max="8" step="0.05" value="5.155"></div>
+        <div class="item"><div class="top"><label for="thr">Threshold</label><output id="thrOut"></output></div>
+          <input id="thr" type="range" min="0.3" max="0.7" step="0.01" value="0.5"></div>
+        <div class="item"><div class="top"><label for="dose">Dose</label><output id="doseOut"></output></div>
+          <input id="dose" type="range" min="0.85" max="1.15" step="0.01" value="1"></div>
+      </div>
+    </section>
+    <section>
+      <h2>OPC</h2>
+      <div class="group">
+        <div class="item"><div class="top"><label for="iters">Iterations</label><output id="itersOut"></output></div>
+          <input id="iters" type="range" min="1" max="60" step="1" value="30"></div>
+        <div class="item"><div class="top"><label for="damp">Damping</label><output id="dampOut"></output></div>
+          <input id="damp" type="range" min="0.1" max="1" step="0.05" value="0.5"></div>
+        <button type="button" class="action" id="resetMask">Reset Mask</button>
+      </div>
+    </section>
+    <section>
+      <h2>Edit</h2>
+      <div class="group">
+        <div class="item"><div class="seg full" id="toolSeg" role="group" aria-label="Edit tool">
+          <button type="button" data-v="select" aria-pressed="true">Edge</button>
+          <button type="button" data-v="add" aria-pressed="false">Add</button>
+          <button type="button" data-v="erase" aria-pressed="false">Erase</button>
+          <button type="button" data-v="cells" aria-pressed="false" id="cellsTool">Target</button></div></div>
+        <div class="item row"><span id="segOut">No edge selected</span>
+          <div class="stepper"><button type="button" id="segMinus" aria-label="Move edge inward">−</button><button type="button" id="segPlus" aria-label="Move edge outward">+</button></div></div>
+      </div>
+      <p class="hint" id="toolNote"></p>
+    </section>
+  </aside>
 </div>
-<div class="toast" id="toast" hidden></div>
-<div class="dialog" id="dlg" hidden><div class="card"><b id="dlgTitle">Results JSON</b>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="dialog" id="dlg" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="dlgTitle"><h2 id="dlgTitle">Results JSON</h2>
   <textarea id="dlgText" readonly></textarea>
-  <div class="btns"><button type="button" class="btn primary" id="dlgCopy">Copy</button><button type="button" class="btn" id="dlgClose">Close</button></div></div></div>
+  <div class="btns"><button type="button" class="btn" id="dlgClose">Done</button><button type="button" class="btn primary" id="dlgCopy">Copy</button></div></div></div>
 
 <script>
 "use strict";
@@ -532,15 +644,21 @@ async function runOpc() {
     const epe = segs.map(g => edgeDisp(E, G, level, g.site[0], g.site[1], g.n[0], g.n[1]));
     for (const v of epe) { sq += v * v; mx = Math.max(mx, Math.abs(v)); }
     S.history.push({ it: k, mismatch: 100 * xor * G.p * G.p / S.ctx.tArea, rms: Math.sqrt(sq / epe.length), max: mx });
-    document.getElementById("progress").textContent =
-      `iteration ${k}/${S.iters} · mismatch ${S.history[k].mismatch.toFixed(2)} % · EPE rms ${S.history[k].rms.toFixed(3)} nm`;
+    showProgress(k);
     drawSpark();
     if (k === S.iters) break;
     for (let i = 0; i < segs.length; i++) d[i] = Math.max(segs[i].lo, Math.min(segs[i].hi, d[i] - S.damp * epe[i]));
     if (k % 5 === 0) { S.opc = evaluate(cov, S.ctx); renderRow(1); renderMetrics(); }
     await nextFrame();
   }
-  S.offsets = d; S.sel = -1; recompute("opc"); S.busy = false; setBusy(false); toast("OPC finished");
+  S.offsets = d; S.sel = -1; recompute("opc"); S.busy = false; setBusy(false); showProgress(-1);
+}
+
+function showProgress(k) {
+  const bar = C("bar"), last = S.history[S.history.length - 1];
+  if (k >= 0) { C("status").textContent = `Iteration ${k} of ${S.iters}`; bar.style.opacity = 1; bar.style.width = 100 * k / S.iters + "%"; return; }
+  C("status").textContent = last ? `${last.it} iterations · EPE rms ${last.rms.toFixed(3)} nm` : "";
+  bar.style.opacity = 0; setTimeout(() => { if (!S.busy) bar.style.width = 0; }, 500);
 }
 
 // ======================================================================= rendering
@@ -572,7 +690,7 @@ function dashedTarget(ctx, s) {
 function scaleBar(ctx, view, s) {
   const L = 10, x = view.x0 + view.w - 4 - L, y = view.y0 + view.h - 4;
   ctx.save(); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2 / s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + L, y); ctx.stroke();
-  ctx.fillStyle = css("--ink-2"); ctx.font = `${10 / s}px ${css("--font-mono")}`; ctx.textAlign = "center"; ctx.fillText("10 nm", x + L / 2, y - 3 / s); ctx.restore();
+  ctx.fillStyle = css("--ink-2"); ctx.font = `${10 / s}px ${css("--font-mono")}`; ctx.textAlign = "right"; ctx.fillText("10 nm", x + L, y - 3 / s); ctx.restore();
 }
 
 function imageLayer(ctx, G, fill) {
@@ -650,10 +768,11 @@ function renderRow(r) {
   else { drawMask(C("c10"), maskPolygons(S.ctx.geo, S.offsets), S.extras, true); drawExposure(C("c11"), S.opc, css("--after")); drawDeveloped(C("c12"), S.opc, css("--after")); }
 }
 
-const METRICS = [["mismatch_pct", "Mismatch area", "%", 2], ["iou", "IoU", "", 4, true], ["epe_mean", "EPE mean (edges)", "nm", 3],
-  ["epe_max", "EPE max (edges)", "nm", 3], ["cd_err_mean", "CD error mean", "nm", 3], ["cd_err_max", "CD error max", "nm", 3],
-  ["line_end_mean", "Line-end pull-back mean", "nm", 3], ["corner", "Corner error mean", "nm", 2],
+const METRICS = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 4, true], ["epe_mean", "EPE mean", "nm", 3],
+  ["epe_max", "EPE max", "nm", 3], ["cd_err_mean", "CD error mean", "nm", 3], ["cd_err_max", "CD error max", "nm", 3],
+  ["line_end_mean", "Line-end shortening", "nm", 3], ["corner", "Corner error", "nm", 2],
   ["bridges", "Bridges", "", 0], ["opens", "Opens", "", 0], ["missing", "Missing shapes", "", 0], ["spurious", "Extra shapes", "", 0]];
+const TILES = [["mismatch_pct", "Mismatch", "%", 2], ["iou", "IoU", "", 3], ["epe_mean", "EPE", "nm", 2], ["cd_err_max", "CD error", "nm", 2]];
 function fmt(v, d) { return Number.isFinite(v) ? v.toFixed(d) : "—"; }
 function renderMetrics() {
   const tb = document.querySelector("#mtable tbody"); tb.textContent = "";
@@ -661,31 +780,53 @@ function renderMetrics() {
     const a = S.orig?.metrics[k], b = S.opc?.metrics[k], tr = document.createElement("tr");
     let change = "—", cls = "";
     if (Number.isFinite(a) && Number.isFinite(b)) {
-      if (d === 0) { change = b === a ? "same" : (b - a > 0 ? "+" : "") + (b - a); cls = b === a ? "" : (b < a ? "better" : "worse"); }
+      if (d === 0) { change = b === a ? "—" : (b - a > 0 ? "+" : "") + (b - a); cls = b === a ? "" : (b < a ? "better" : "worse"); }
       else if (Math.abs(a) > 1e-12) { const r = 100 * (b - a) / Math.abs(a); change = (r > 0 ? "+" : "") + r.toFixed(1) + " %";
         cls = Math.abs(r) < 0.05 ? "" : ((higher ? r > 0 : r < 0) ? "better" : "worse"); }
     }
-    for (const [txt, c] of [[label + (unit ? ` [${unit}]` : ""), ""], [fmt(a, d), ""], [fmt(b, d), ""], [change, cls]]) {
+    for (const [txt, c] of [[label + (unit ? ` (${unit})` : ""), ""], [fmt(a, d), ""], [fmt(b, d), ""], [change, cls]]) {
       const td = document.createElement("td"); td.textContent = txt; if (c) td.className = c; tr.appendChild(td); }
     tb.appendChild(tr);
+  }
+  renderStats();
+}
+
+function renderStats() {
+  const el = C("stats"); el.textContent = "";
+  for (const [k, label, unit, d] of TILES) {
+    const a = S.orig?.metrics[k], b = S.opc?.metrics[k], t = document.createElement("div"), v = document.createElement("div");
+    t.className = "stat"; v.className = "v"; v.textContent = fmt(b, d);
+    if (unit) { const u = document.createElement("small"); u.textContent = " " + unit; v.appendChild(u); }
+    const kk = document.createElement("div"), was = document.createElement("div");
+    kk.className = "k"; kk.textContent = label; was.className = "was"; was.textContent = `Original ${fmt(a, d)}${unit ? " " + unit : ""}`;
+    t.append(kk, v, was); el.appendChild(t);
   }
 }
 
 function drawSpark() {
-  const cv = C("spark"), w = cv.clientWidth || 300, h = cv.clientHeight || 120, dpr = window.devicePixelRatio || 1;
+  const cv = C("spark"), w = cv.clientWidth || 300, h = cv.clientHeight || 190, dpr = window.devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr; const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
-  const hs = S.history; ctx.font = `11px ${css("--font-mono")}`; ctx.fillStyle = css("--ink-2");
-  if (!hs.length) { ctx.fillText("Run OPC to see the mismatch drop per iteration.", 4, h / 2); return; }
-  const pad = { l: 40, r: 10, t: 8, b: 20 }, maxY = Math.max(...hs.map(q => q.mismatch)) * 1.05, maxX = Math.max(1, S.iters);
+  const hs = S.history; ctx.font = `12px ${css("--font-ui")}`; ctx.fillStyle = css("--muted");
+  if (!hs.length) { ctx.textAlign = "center"; ctx.fillText("Run OPC to see the mismatch per iteration.", w / 2, h / 2); return; }
+  const top = Math.max(...hs.map(q => q.mismatch)) * 1.1, step = [1, 2, 5, 10, 20, 50].find(s => top / s <= 4) || 100;
+  const maxY = Math.ceil(top / step) * step, maxX = Math.max(1, S.iters), pad = { l: 38, r: 10, t: 8, b: 22 };
   const X = i => pad.l + (w - pad.l - pad.r) * i / maxX, Y = v => pad.t + (h - pad.t - pad.b) * (1 - v / maxY);
-  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; ctx.beginPath();
-  for (const v of [0, maxY / 2, maxY]) { ctx.moveTo(pad.l, Y(v)); ctx.lineTo(w - pad.r, Y(v)); ctx.fillText(v.toFixed(1), 2, Y(v) + 4); }
-  ctx.stroke(); ctx.fillText("0", X(0) - 3, h - 4); ctx.fillText(String(maxX), X(maxX) - 12, h - 4); ctx.fillText("iteration", w / 2 - 25, h - 4);
-  ctx.strokeStyle = css("--after"); ctx.lineWidth = 2; ctx.beginPath();
-  hs.forEach((q, i) => i ? ctx.lineTo(X(q.it), Y(q.mismatch)) : ctx.moveTo(X(q.it), Y(q.mismatch))); ctx.stroke();
-  const last = hs[hs.length - 1]; ctx.fillStyle = css("--after"); ctx.beginPath(); ctx.arc(X(last.it), Y(last.mismatch), 3, 0, 7); ctx.fill();
-  ctx.fillStyle = css("--ink"); ctx.fillText(last.mismatch.toFixed(2) + " %", Math.min(X(last.it) + 6, w - 60), Y(last.mismatch) - 6);
+  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1; ctx.textAlign = "right"; ctx.beginPath();
+  for (let v = 0; v <= maxY + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.fillText(v + " %", pad.l - 6, y + 4); }
+  ctx.stroke(); ctx.textAlign = "left"; ctx.fillText("0", X(0), h - 5); ctx.textAlign = "right"; ctx.fillText(String(maxX), X(maxX), h - 5);
+  ctx.textAlign = "center"; ctx.fillText("Iteration", (X(0) + X(maxX)) / 2, h - 5);
+  const c = css("--after"), rgb = hexRgb(c), g = ctx.createLinearGradient(0, pad.t, 0, Y(0));
+  g.addColorStop(0, `rgba(${rgb.join(",")},0.22)`); g.addColorStop(1, `rgba(${rgb.join(",")},0)`);
+  ctx.beginPath(); hs.forEach((q, i) => i ? ctx.lineTo(X(q.it), Y(q.mismatch)) : ctx.moveTo(X(q.it), Y(q.mismatch)));
+  const last = hs[hs.length - 1];
+  ctx.save(); ctx.lineTo(X(last.it), Y(0)); ctx.lineTo(X(0), Y(0)); ctx.closePath(); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+  ctx.beginPath(); hs.forEach((q, i) => i ? ctx.lineTo(X(q.it), Y(q.mismatch)) : ctx.moveTo(X(q.it), Y(q.mismatch)));
+  ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.beginPath(); ctx.arc(X(last.it), Y(last.mismatch), 4, 0, 7); ctx.fillStyle = c; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = css("--panel"); ctx.stroke();
+  ctx.fillStyle = css("--ink"); ctx.font = `600 12px ${css("--font-ui")}`; ctx.textAlign = "right";
+  ctx.fillText(last.mismatch.toFixed(2) + " %", Math.min(X(last.it), w - pad.r), Y(last.mismatch) - 10);
 }
 
 function renderAll() { renderRow(0); renderRow(1); renderMetrics(); drawSpark(); updateSegOut(); }
@@ -710,8 +851,8 @@ function moveSel(delta) {
 }
 function updateSegOut() {
   const o = C("segOut");
-  if (S.sel < 0) { o.textContent = "no edge"; return; }
-  const g = S.ctx.geo.segs[S.sel], kind = ["edge", "convex corner", "concave corner", "line end"][g.kind];
+  if (S.sel < 0) { o.textContent = "No edge selected"; return; }
+  const g = S.ctx.geo.segs[S.sel], kind = ["Edge", "Convex corner", "Concave corner", "Line end"][g.kind];
   o.textContent = `${kind} ${S.offsets[S.sel] >= 0 ? "+" : ""}${S.offsets[S.sel].toFixed(2)} nm`;
 }
 
@@ -745,17 +886,20 @@ function loadCell(name) {
   S.cell = name; const t = cellsFromRects(CELLS[name]); S.nx = t.nx; S.ny = t.ny; S.bits = t.bits;
   S.extras = []; S.offsets = null; S.history = []; S.sel = -1; S.ctx = null; prepare();
   C("cellsTool").disabled = name !== "Custom"; if (name !== "Custom" && S.tool === "cells") setTool("select");
-  recompute(); C("progress").textContent = "";
+  recompute(); C("status").textContent = "";
 }
 
 function setTool(v) {
   S.tool = v; document.querySelectorAll("#toolSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
-  C("toolNote").textContent = { select: "Click an edge in the OPC mask, then move it with the buttons or arrow keys.",
-    add: "Drag in the OPC mask to add a rectangle (e.g. an assist feature).", erase: "Drag in the OPC mask to cut a rectangle out.",
-    cells: "Custom cell: click or drag on the original mask to toggle 3.5 nm cells of the target." }[v];
+  C("toolNote").textContent = { select: "Click an edge on the OPC mask. Arrow keys nudge it.",
+    add: "Drag on the OPC mask to add a rectangle.", erase: "Drag on the OPC mask to cut a rectangle.",
+    cells: "Click or drag on the original mask to draw the target." }[v];
   C("c10").classList.toggle("edit", v !== "cells"); C("c00").classList.toggle("edit", v === "cells"); renderAll();
 }
-function setBusy(b) { ["runOpc", "resetMask", "segMinus", "segPlus"].forEach(id => C(id).disabled = b); }
+function setBusy(b) {
+  ["runOpc", "resetMask", "segMinus", "segPlus"].forEach(id => C(id).disabled = b);
+  C("runOpc").classList.toggle("busy", b); C("runLabel").textContent = b ? "Running" : "Run OPC";
+}
 
 let toastT = 0;
 function toast(msg) { const t = C("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
@@ -820,8 +964,15 @@ function restore(j) {
 }
 
 // ======================================================================== controls
+function fill(el) { el.style.setProperty("--p", 100 * (el.value - el.min) / (el.max - el.min) + "%"); }
+function closeMenus() { for (const [b, m] of [["shareBtn", "shareMenu"], ["infoBtn", "infoPop"]]) { C(m).hidden = true; C(b).setAttribute("aria-expanded", "false"); } }
+function bindMenu(btn, menu) {
+  C(btn).addEventListener("click", ev => { ev.stopPropagation(); const open = C(menu).hidden; closeMenus(); C(menu).hidden = !open; C(btn).setAttribute("aria-expanded", String(open)); });
+  C(menu).addEventListener("click", ev => { if (ev.target.closest("button")) closeMenus(); });
+}
+
 function syncControls() {
-  const set = (id, v, f) => { C(id).value = v; C(id + "Out").textContent = f(v); };
+  const set = (id, v, f) => { C(id).value = v; C(id + "Out").textContent = f(v); fill(C(id)); };
   set("sigma", S.sigma, v => (+v).toFixed(2) + " nm"); set("thr", S.thr, v => (+v).toFixed(2)); set("dose", S.dose, v => (+v).toFixed(2));
   set("iters", S.iters, v => v); set("damp", S.damp, v => (+v).toFixed(2));
   document.querySelectorAll("#cellSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S.cell));
@@ -833,14 +984,16 @@ function init() {
   document.querySelectorAll("#cellSeg button").forEach(b => b.addEventListener("click", () => { if (!S.busy) { loadCell(b.dataset.v); syncControls(); } }));
   document.querySelectorAll("#psfSeg button").forEach(b => b.addEventListener("click", () => { if (S.busy) return; S.psf = b.dataset.v; syncControls(); recompute(); }));
   document.querySelectorAll("#toolSeg button").forEach(b => b.addEventListener("click", () => { if (!b.disabled) setTool(b.dataset.v); }));
-  const slider = (id, key, f) => C(id).addEventListener("input", () => { S[key] = +C(id).value; C(id + "Out").textContent = f(S[key]);
+  const slider = (id, key, f) => C(id).addEventListener("input", () => { S[key] = +C(id).value; C(id + "Out").textContent = f(S[key]); fill(C(id));
     if (["sigma", "thr", "dose"].includes(key) && !S.busy) { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => recompute()); } });
   slider("sigma", "sigma", v => v.toFixed(2) + " nm"); slider("thr", "thr", v => v.toFixed(2)); slider("dose", "dose", v => v.toFixed(2));
   slider("iters", "iters", v => v); slider("damp", "damp", v => v.toFixed(2));
   C("runOpc").addEventListener("click", runOpc);
-  C("resetMask").addEventListener("click", () => { if (S.busy) return; S.offsets = null; S.extras = []; S.history = []; S.sel = -1; S.ctx = null; prepare(); recompute(); C("progress").textContent = ""; });
+  C("resetMask").addEventListener("click", () => { if (S.busy) return; S.offsets = null; S.extras = []; S.history = []; S.sel = -1; S.ctx = null; prepare(); recompute(); C("status").textContent = ""; });
   C("segMinus").addEventListener("click", () => moveSel(-0.5)); C("segPlus").addEventListener("click", () => moveSel(0.5));
-  document.addEventListener("keydown", ev => { if (S.sel < 0 || ev.target.tagName === "INPUT") return;
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "Escape") { closeMenus(); C("dlg").hidden = true; }
+    if (S.sel < 0 || ev.target.tagName === "INPUT") return;
     const step = ev.shiftKey ? 0.1 : 0.5;
     if (ev.key === "ArrowUp" || ev.key === "ArrowRight") { moveSel(step); ev.preventDefault(); }
     if (ev.key === "ArrowDown" || ev.key === "ArrowLeft") { moveSel(-step); ev.preventDefault(); }
@@ -852,12 +1005,17 @@ function init() {
   C("exCopy").addEventListener("click", () => showDialog("Results JSON", JSON.stringify(stateJson(), null, 1)));
   C("dlgCopy").addEventListener("click", () => { const t = C("dlgText"); navigator.clipboard?.writeText(t.value).then(() => toast("Copied"), () => { t.select(); toast("Press Ctrl/Cmd+C to copy"); }); });
   C("dlgClose").addEventListener("click", () => C("dlg").hidden = true);
+  bindMenu("shareBtn", "shareMenu"); bindMenu("infoBtn", "infoPop");
+  document.addEventListener("click", ev => { if (!ev.target.closest(".menu-wrap")) closeMenus(); });
+  C("exOpen").addEventListener("click", () => C("imJson").click());
   C("imJson").addEventListener("change", ev => { const f = ev.target.files[0]; if (!f) return; const r = new FileReader();
     r.onload = () => { try { restore(JSON.parse(r.result)); } catch (e) { toast("That file is not a Metal1 OPC Bench JSON"); } }; r.readAsText(f); ev.target.value = ""; });
   let rt = 0; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => S.ctx && renderAll(), 150); });
   matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => S.ctx && renderAll());
   new MutationObserver(() => S.ctx && renderAll()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  syncControls(); loadCell("INV_X1"); runOpc();
+  syncControls(); loadCell("INV_X1"); setTool("select"); runOpc();
 }
 init();
 </script>
+</body>
+</html>
