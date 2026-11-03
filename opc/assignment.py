@@ -190,7 +190,7 @@ def run_assignment(cfg: Config, out_dir: str | Path) -> dict:
             dict(label="with OPC", mask=mb.mask, grid=c.grid, exposure=fa["exposure"], threshold=th,
                  contours=fa["contours"], color=viz.C_PRINT_AFTER, metrics=fa)],
             path=fig_dir / f"Fig{4 if p.name == 'INV_X1' else 5}_{p.name}.png",
-            width_in=viz.PAGE_W_IN, window=window)
+            window=window)   # one column each, side by side in the paper
         print(f"  {p.name}: IoU {fb['iou']:.3f} -> {fa['iou']:.3f}, mismatch {fb['area_pct']:.2f} -> "
               f"{fa['area_pct']:.2f} %, converged at {mb.converged_at}", flush=True)
     write_csv(tab_dir / "T3_metrics.csv", metric_rows)

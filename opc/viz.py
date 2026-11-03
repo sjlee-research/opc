@@ -781,7 +781,6 @@ def _cell_window(ax, target, pad=12.0, legend_room=0.2):
 
 
 COL_W_IN = 3.35                # one column of the two-column paper (8.5 cm)
-PAGE_W_IN = 4.33               # Figs. 4 and 5 across both columns (11 cm, drawn at print size)
 
 
 def _col_axes(ax, fontsize=6):
